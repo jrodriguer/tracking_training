@@ -2,18 +2,21 @@
 
 ## Objective
 
-Deliver the Workout Logging phase so users can start a session from a selected
-routine day, log reps/weight/notes per exercise, and persist session history
-without mutating routine templates.
+Deliver the Workout Logging phase so users can create a session from a
+selected routine day, choose the workout date independently from when they log
+it, edit or remove saved sessions, and persist session history without
+mutating routine templates.
 
 This plan is aligned with the approved MVP in
 [implementation_handoff.md](implementation_handoff.md).
 
 ## In Scope
 
-- Start a workout session from a routine day.
-- Capture dated session metadata.
+- Create a workout session from a routine day.
+- Capture user-selected session dates for current or previous workouts.
 - Record exercise entries with reps, weight, and notes.
+- Edit saved workout sessions.
+- Remove saved workout sessions.
 - Persist session history as standalone records.
 - Keep routine templates and workout history separate.
 - Provide basic session history list for validation and flow confidence.
@@ -38,7 +41,7 @@ Use incremental vertical slices to reduce risk:
 
 1. Build domain and state contracts first.
 2. Add local persistence and repository wiring.
-3. Add workout logging UI and session lifecycle.
+3. Add workout logging UI and session management lifecycle.
 4. Add history read-back UI and test coverage.
 5. Validate separation rules and edge cases.
 
@@ -68,7 +71,8 @@ Deliverables:
 - Storage schema for sessions and entries in shared data layer.
 - Repository interface + implementation for:
   - Create session from routine day snapshot.
-  - Append/update entry data.
+  - Update session date and entry data.
+  - Delete saved sessions.
   - List sessions and session details.
 - Transaction-safe writes for session + entries.
 
@@ -82,15 +86,18 @@ Exit criteria:
 Deliverables:
 
 - Replace placeholder `workouts_page.dart` with:
-  - Routine day picker or "Start session" from selected day.
+  - Routine day picker or "Log session" from selected day.
+  - User-editable workout date field.
   - Exercise logging form rows (reps, weight, notes).
   - Save/complete session action.
+  - Edit and delete actions for saved sessions.
 - Riverpod controller(s) for draft session state and persistence.
 - Input validation and user feedback for invalid values.
 
 Exit criteria:
 
 - User can complete full logging flow in app.
+- User can correct or remove a saved historical session.
 - Data is persisted and visible after app restart.
 
 ### Milestone 4: Session History Surface
@@ -99,6 +106,7 @@ Deliverables:
 
 - Session history list view with date and routine day context.
 - Session detail view with logged entries.
+- Entry points to edit or remove an existing session.
 - Minimal filtering (most recent first) to keep reads fast and simple.
 
 Exit criteria:
@@ -111,7 +119,9 @@ Exit criteria:
 Deliverables:
 
 - Tests:
-  - Unit tests for controller/repository session creation and updates.
+  - Unit tests for controller/repository session creation, updates, and
+    deletion.
+  - Regression test for logging a session after its workout date.
   - Regression test for non-mutation of routine templates.
   - Widget test for core workout flow navigation and save.
 - Validation runs:
@@ -160,6 +170,8 @@ Keep this order to avoid UI rework caused by unstable contracts.
   - Mitigation: Keep schema minimal; defer non-essential fields.
 - Risk: Session/routine coupling causes accidental mutation.
   - Mitigation: Snapshot day/exercise identity during session creation and test it.
+- Risk: Editing history accidentally changes immutable session context.
+  - Mitigation: Restrict editable fields to session-owned data and cover with tests.
 - Risk: Form UX becomes slow on mobile.
   - Mitigation: Keep fields compact and avoid deep modal stacks.
 - Risk: Scope creep into Phase 4 analytics.
@@ -169,17 +181,20 @@ Keep this order to avoid UI rework caused by unstable contracts.
 
 Phase 3 is done when all are true:
 
-1. User can start and complete a workout session from a routine day.
+1. User can create a workout session from a routine day for the current day or
+  a previous date.
 2. User can record reps, weight, and notes per exercise.
-3. Session history persists locally and survives restarts.
-4. Routine template edits do not rewrite historical session data.
-5. Analyzer and tests pass for the new changes.
+3. User can edit or remove a saved workout session.
+4. Session history persists locally and survives restarts.
+5. Routine template edits do not rewrite historical session data.
+6. Analyzer and tests pass for the new changes.
 
 ## Execution Checklist
 
 - [ ] Add workout domain models.
 - [ ] Add repository interfaces and local implementation.
 - [ ] Add session logging controllers.
+- [ ] Add session edit and delete flows.
 - [ ] Build workout logging UI.
 - [ ] Build session history UI.
 - [ ] Add tests for model/controller/repository/widget flow.

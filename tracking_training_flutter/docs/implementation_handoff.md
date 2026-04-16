@@ -53,7 +53,11 @@ Preferred presentation:
 
 ### 2. Workout Logging
 
-The app must allow logging a dated workout session from a selected routine day.
+The app must allow creating a dated workout session from a selected routine
+day. The workout date must be user-selected so a session can be recorded later
+for a previous day when needed. Saved workout sessions must also be editable
+and removable.
+
 Each exercise entry must support:
 
 - Set number.
@@ -63,6 +67,8 @@ Each exercise entry must support:
 
 The routine template and workout history must stay separate. Logging a workout
 must create historical data rather than overwrite the routine definition.
+Editing or deleting a saved workout session must only affect that historical
+record.
 
 ### 3. Progress Visualization
 
@@ -188,8 +194,10 @@ Minimum persistence rules:
 
 ### Phase 3: Workout Logging
 
-- Start a session from a selected routine day.
+- Create a session from a selected routine day with a user-selected workout
+  date.
 - Record reps, weight, and notes.
+- Edit and remove saved workout sessions.
 - Save session history without mutating the routine template.
 - Detailed execution plan: `docs/phase_3_delivery_planning.md`.
 
@@ -297,7 +305,8 @@ The handoff is complete when the implemented app can do the following:
 
 1. Show a seeded weekly routine with four editable days.
 2. Let the user edit muscle-group focus and exercises for each day.
-3. Let the user log a dated workout with reps, weight, and notes.
+3. Let the user create, edit, and remove a dated workout with reps, weight,
+   and notes, including sessions entered after the workout date.
 4. Show previous performance for an exercise in a readable history view.
 5. Show a simple progress chart for an exercise.
 6. Run on iOS, Android, and web from the same Flutter codebase.
@@ -309,6 +318,7 @@ The handoff is complete when the implemented app can do the following:
 - Run `flutter test` and cover routine mutation, session logging, and progress
   calculations.
 - Test the main flow on one phone-sized simulator and one desktop browser.
+- Confirm the user can log a session for a prior date, then edit or remove it.
 - Confirm that editing a routine does not erase historical workout data.
 - Confirm that protected routes redirect correctly under fake auth.
 
