@@ -1,0 +1,44 @@
+services:
+  # Development services
+  postgres:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "8090:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: tracking_training
+      POSTGRES_PASSWORD: "rBno_i2LlSmZl2M7mNYi3v3wA9QnQxRs"
+    volumes:
+      - tracking_training_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:6.2.6
+    ports:
+      - "8091:6379"
+    command: redis-server --requirepass "jEQ7n9cUWdI8fNKc018PKcmCHarE5rWZ"
+    environment:
+      - REDIS_REPLICATION_MODE=master
+
+  # Test services
+  postgres_test:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "9090:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: tracking_training_test
+      POSTGRES_PASSWORD: "0Pg2wdcwgDVkhX3r2n8RNRKXst1Pbk6j"
+    volumes:
+      - tracking_training_test_data:/var/lib/postgresql/data
+
+  redis_test:
+    image: redis:6.2.6
+    ports:
+      - "9091:6379"
+    command: redis-server --requirepass "OaSA_IQrsYjI2vSHfYH214nUzbiDWtip"
+    environment:
+      - REDIS_REPLICATION_MODE=master
+
+volumes:
+  tracking_training_data:
+  tracking_training_test_data:

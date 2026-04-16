@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "tracking_training_flutter",
+            "cwd": "${workspaceFolder}/tracking_training_flutter",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "tracking_training_server",
+            "cwd": "${workspaceFolder}/tracking_training_server",
+            "request": "launch",
+            "type": "dart",
+            "preLaunchTask": "docker_compose_up",
+            "program": "bin/main.dart",
+            "env": {
+                "SERVERPOD_PASSWORD_database": "rBno_i2LlSmZl2M7mNYi3v3wA9QnQxRs"
+            },
+            "args": [
+                "--apply-migrations"
+            ]
+        }
+    ],
+    "compounds": [
+        {
+            "name": "tracking_training (full stack)",
+            "configurations": [
+                "tracking_training_server",
+                "tracking_training_flutter"
+            ],
+            "presentation": {
+                "order": 1
+            }
+        }
+    ]
+}
