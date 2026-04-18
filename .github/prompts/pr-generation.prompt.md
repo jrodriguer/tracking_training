@@ -5,7 +5,7 @@ model: Raptor mini (Preview) (copilot)
 
 # PR Command Automation Prompt
 
-Execute the following workflow using Github's MCP:
+Execute the following workflow using GitHub's MCP:
 
 1. Confirm there are local changes and gather validation evidence for them.
 2. Prepare a commit message that follows `tracking_training_flutter/docs/git.md`:
@@ -20,4 +20,4 @@ Execute the following workflow using Github's MCP:
 5. Return a concise summary with what was committed and what remains pending.
 
 This workflow ensures consistent, clear, and traceable contributions.
-Don't ask for github repo (owner/repo) or branch name; use the current repository and active PR branch context.
+Don't ask for GitHub repo (owner/repo) or branch name; use the current repository and active PR branch context.
