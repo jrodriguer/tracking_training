@@ -15,7 +15,8 @@ Execute the following workflow using GitHub's MCP:
 3. Use `report_progress` to:
    - stage and commit all local changes
    - push updates to the current PR branch
-   - update the PR description using a markdown checklist only
+   - update the PR description using a markdown checklist only (for example,
+     `- [x] done` and `- [ ] pending`)
 4. Keep the PR open for human review. Do **not** merge, close, or delete branches.
 5. Return a concise summary with what was committed and what remains pending.
 
