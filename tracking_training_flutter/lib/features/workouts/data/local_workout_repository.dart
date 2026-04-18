@@ -10,14 +10,18 @@ class LocalWorkoutRepository implements WorkoutRepository {
   static const _sessionsKey = 'workout_sessions_v1';
 
   @override
-  Future<WorkoutSession> createSessionFromRoutineDay(RoutineDay day) async {
+  Future<WorkoutSession> createSessionFromRoutineDay(
+    RoutineDay day, {
+    DateTime? workoutDate,
+  }) async {
     final now = DateTime.now();
 
     return WorkoutSession(
       id: _buildId('session'),
       routineDayId: day.id,
       routineDayTitle: day.title,
-      startedAt: now,
+      createdAt: now,
+      startedAt: workoutDate ?? now,
       updatedAt: now,
       entries: [
         for (final exercise in day.exercises)
@@ -64,6 +68,22 @@ class LocalWorkoutRepository implements WorkoutRepository {
     ];
 
     final encoded = jsonEncode([for (final value in updated) value.toJson()]);
+    await prefs.setString(_sessionsKey, encoded);
+  }
+
+  @override
+  Future<void> deleteSession(String sessionId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final sessions = await listSessions();
+
+    final updated = [
+      for (final value in sessions)
+        if (value.id != sessionId) value,
+    ];
+
+    final encoded = jsonEncode([
+      for (final value in updated) value.toJson(),
+    ]);
     await prefs.setString(_sessionsKey, encoded);
   }
 

@@ -101,6 +101,7 @@ class WorkoutSession {
     required this.id,
     required this.routineDayId,
     required this.routineDayTitle,
+    required this.createdAt,
     required this.startedAt,
     required this.updatedAt,
     required this.entries,
@@ -109,12 +110,18 @@ class WorkoutSession {
   final String id;
   final String routineDayId;
   final String routineDayTitle;
+
+  /// When this record was actually created in the app.
+  /// Distinct from [startedAt], which is the user-selected workout date.
+  final DateTime createdAt;
+
   final DateTime startedAt;
   final DateTime updatedAt;
   final List<WorkoutEntry> entries;
 
   WorkoutSession copyWith({
     String? routineDayTitle,
+    DateTime? startedAt,
     DateTime? updatedAt,
     List<WorkoutEntry>? entries,
   }) {
@@ -122,7 +129,8 @@ class WorkoutSession {
       id: id,
       routineDayId: routineDayId,
       routineDayTitle: routineDayTitle ?? this.routineDayTitle,
-      startedAt: startedAt,
+      createdAt: createdAt,
+      startedAt: startedAt ?? this.startedAt,
       updatedAt: updatedAt ?? this.updatedAt,
       entries: entries ?? this.entries,
     );
@@ -133,6 +141,7 @@ class WorkoutSession {
       'id': id,
       'routineDayId': routineDayId,
       'routineDayTitle': routineDayTitle,
+      'createdAt': createdAt.toIso8601String(),
       'startedAt': startedAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'entries': [for (final entry in entries) entry.toJson()],
@@ -141,12 +150,17 @@ class WorkoutSession {
 
   factory WorkoutSession.fromJson(Map<String, dynamic> json) {
     final rawEntries = (json['entries'] as List<dynamic>? ?? const []);
+    final startedAt = DateTime.parse(json['startedAt'] as String);
 
     return WorkoutSession(
       id: json['id'] as String,
       routineDayId: json['routineDayId'] as String,
       routineDayTitle: json['routineDayTitle'] as String,
-      startedAt: DateTime.parse(json['startedAt'] as String),
+      // Migration fallback: old records without createdAt default to startedAt.
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : startedAt,
+      startedAt: startedAt,
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       entries: [
         for (final rawEntry in rawEntries)

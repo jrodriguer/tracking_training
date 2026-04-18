@@ -43,9 +43,15 @@ class WorkoutController extends AsyncNotifier<WorkoutState> {
     return WorkoutState(sessions: sessions);
   }
 
-  Future<void> startSession(RoutineDay day) async {
+  Future<void> startSession(
+    RoutineDay day, {
+    DateTime? workoutDate,
+  }) async {
     final current = _safeState();
-    final session = await _repository.createSessionFromRoutineDay(day);
+    final session = await _repository.createSessionFromRoutineDay(
+      day,
+      workoutDate: workoutDate,
+    );
 
     state = AsyncData(current.copyWith(activeSession: session));
   }
@@ -186,6 +192,42 @@ class WorkoutController extends AsyncNotifier<WorkoutState> {
 
     state = AsyncData(
       current.copyWith(sessions: sessions, clearActiveSession: true),
+    );
+  }
+
+  void editSavedSession(WorkoutSession session) {
+    final current = _safeState();
+    state = AsyncData(current.copyWith(activeSession: session));
+  }
+
+  void updateSessionDate(DateTime date) {
+    final current = _safeState();
+    final activeSession = current.activeSession;
+
+    if (activeSession == null) {
+      return;
+    }
+
+    state = AsyncData(
+      current.copyWith(
+        activeSession: activeSession.copyWith(
+          startedAt: date,
+          updatedAt: DateTime.now(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> deleteSession(String sessionId) async {
+    await _repository.deleteSession(sessionId);
+    final sessions = await _repository.listSessions();
+    final current = _safeState();
+    final clearActive = current.activeSession?.id == sessionId;
+    state = AsyncData(
+      current.copyWith(
+        sessions: sessions,
+        clearActiveSession: clearActive,
+      ),
     );
   }
 

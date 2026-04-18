@@ -16,6 +16,11 @@ class WorkoutsPage extends ConsumerStatefulWidget {
 
 class _WorkoutsPageState extends ConsumerState<WorkoutsPage> {
   String? _selectedDayId;
+  DateTime _selectedWorkoutDate = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    DateTime.now().day,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +43,11 @@ class _WorkoutsPageState extends ConsumerState<WorkoutsPage> {
     WorkoutState workoutState,
   ) {
     final selectedDay = _resolveSelectedDay(days);
+    final isEditingSavedSession =
+        workoutState.activeSession != null &&
+        workoutState.sessions.any(
+          (session) => session.id == workoutState.activeSession!.id,
+        );
 
     return ListView(
       children: [
@@ -73,14 +83,24 @@ class _WorkoutsPageState extends ConsumerState<WorkoutsPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                _DatePickerField(
+                  label: 'Workout date',
+                  date: _selectedWorkoutDate,
+                  onChanged: (date) {
+                    setState(() => _selectedWorkoutDate = date);
+                  },
+                ),
+                const SizedBox(height: 12),
                 FilledButton.icon(
                   onPressed:
-                      selectedDay == null ||
-                              workoutState.activeSession != null
-                          ? null
-                          : () => ref
-                                .read(workoutControllerProvider.notifier)
-                                .startSession(selectedDay),
+                      selectedDay == null || workoutState.activeSession != null
+                      ? null
+                      : () => ref
+                            .read(workoutControllerProvider.notifier)
+                            .startSession(
+                              selectedDay,
+                              workoutDate: _selectedWorkoutDate,
+                            ),
                   icon: const Icon(Icons.play_arrow_outlined),
                   label: const Text('Start workout session'),
                 ),
@@ -111,8 +131,10 @@ class _WorkoutsPageState extends ConsumerState<WorkoutsPage> {
               ),
             ),
           ),
-        const SizedBox(height: 12),
-        _SessionHistoryCard(sessions: workoutState.sessions),
+        if (!isEditingSavedSession) ...[
+          const SizedBox(height: 12),
+          _SessionHistoryCard(sessions: workoutState.sessions),
+        ],
       ],
     );
   }
@@ -141,9 +163,7 @@ class _ActiveSessionCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dateLabel = DateFormat(
-      'EEE, MMM d yyyy - HH:mm',
-    ).format(session.startedAt);
+    final dateLabel = DateFormat('EEE, MMM d yyyy').format(session.startedAt);
 
     return Card(
       child: Padding(
@@ -156,7 +176,27 @@ class _ActiveSessionCard extends ConsumerWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 4),
-            Text(dateLabel),
+            Row(
+              children: [
+                Expanded(child: Text(dateLabel)),
+                IconButton(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: session.startedAt,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked == null || !context.mounted) return;
+                    ref
+                        .read(workoutControllerProvider.notifier)
+                        .updateSessionDate(picked);
+                  },
+                  icon: const Icon(Icons.edit_calendar_outlined),
+                  tooltip: 'Change workout date',
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             for (final entry in session.entries)
               _ExerciseEntryEditor(entry: entry, sessionId: session.id),
@@ -306,13 +346,22 @@ class _ExerciseEntryEditor extends ConsumerWidget {
   }
 }
 
-class _SessionHistoryCard extends StatelessWidget {
+class _SessionHistoryCard extends ConsumerWidget {
   const _SessionHistoryCard({required this.sessions});
 
   final List<WorkoutSession> sessions;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final workoutValue = ref.watch(workoutControllerProvider).value;
+    final hasActiveSession = workoutValue?.activeSession != null;
+    final activeSessionId = workoutValue?.activeSession?.id;
+
+    final visibleSessions = [
+      for (final session in sessions)
+        if (session.id != activeSessionId) session,
+    ];
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -324,19 +373,38 @@ class _SessionHistoryCard extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            if (sessions.isEmpty)
+            if (visibleSessions.isEmpty)
               const Text('No sessions logged yet.')
             else
-              for (final session in sessions)
+              for (final session in visibleSessions)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(session.routineDayTitle),
                   subtitle: Text(
-                    DateFormat(
-                      'EEE, MMM d yyyy - HH:mm',
-                    ).format(session.startedAt),
+                    '${DateFormat('EEE, MMM d yyyy').format(session.startedAt)}'
+                    ' · ${session.entries.length} exercises',
                   ),
-                  trailing: Text('${session.entries.length} exercises'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: 'Edit session',
+                        onPressed: () => _onEditSession(
+                          context,
+                          ref,
+                          session,
+                          hasActiveSession,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: 'Delete session',
+                        onPressed: () =>
+                            _onDeleteSession(context, ref, session),
+                      ),
+                    ],
+                  ),
                   onTap: () {
                     showModalBottomSheet<void>(
                       context: context,
@@ -350,7 +418,95 @@ class _SessionHistoryCard extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _onEditSession(
+    BuildContext context,
+    WidgetRef ref,
+    WorkoutSession session,
+    bool hasActiveSession,
+  ) async {
+    if (hasActiveSession) {
+      final action = await _showActiveSessionConflictDialog(context);
+      if (!context.mounted) return;
+      switch (action) {
+        case _ConflictAction.save:
+          await ref
+              .read(workoutControllerProvider.notifier)
+              .saveActiveSession();
+          if (!context.mounted) return;
+        case _ConflictAction.discard:
+          ref.read(workoutControllerProvider.notifier).discardActiveSession();
+        case null:
+          return;
+      }
+    }
+    ref.read(workoutControllerProvider.notifier).editSavedSession(session);
+  }
+
+  Future<void> _onDeleteSession(
+    BuildContext context,
+    WidgetRef ref,
+    WorkoutSession session,
+  ) async {
+    final dateLabel = DateFormat('MMM d yyyy').format(session.startedAt);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete session'),
+        content: Text(
+          'Delete the ${session.routineDayTitle} session on '
+          '$dateLabel? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+    await ref
+        .read(workoutControllerProvider.notifier)
+        .deleteSession(session.id);
+  }
+
+  Future<_ConflictAction?> _showActiveSessionConflictDialog(
+    BuildContext context,
+  ) {
+    return showDialog<_ConflictAction>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Unsaved session'),
+        content: const Text(
+          'You have an unsaved active session. '
+          'Save or discard it before editing another.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          OutlinedButton(
+            onPressed: () => Navigator.of(ctx).pop(_ConflictAction.discard),
+            child: const Text('Discard'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(_ConflictAction.save),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
+enum _ConflictAction { save, discard }
 
 class _SessionDetailSheet extends StatelessWidget {
   const _SessionDetailSheet({required this.session});
@@ -370,7 +526,7 @@ class _SessionDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              DateFormat('EEE, MMM d yyyy - HH:mm').format(session.startedAt),
+              DateFormat('EEE, MMM d yyyy').format(session.startedAt),
             ),
             const SizedBox(height: 16),
             for (final entry in session.entries)
@@ -398,6 +554,43 @@ class _SessionDetailSheet extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DatePickerField extends StatelessWidget {
+  const _DatePickerField({
+    required this.label,
+    required this.date,
+    required this.onChanged,
+  });
+
+  final String label;
+  final DateTime date;
+  final ValueChanged<DateTime> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(4),
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: date,
+          firstDate: DateTime(2000),
+          lastDate: DateTime.now(),
+        );
+        if (picked == null || !context.mounted) return;
+        onChanged(picked);
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+          suffixIcon: const Icon(Icons.calendar_today_outlined),
+        ),
+        child: Text(DateFormat('EEE, MMM d yyyy').format(date)),
       ),
     );
   }
