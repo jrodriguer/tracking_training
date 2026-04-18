@@ -6,5 +6,10 @@ abstract class WorkoutRepository {
 
   Future<void> upsertSession(WorkoutSession session);
 
-  Future<WorkoutSession> createSessionFromRoutineDay(RoutineDay day);
+  Future<void> deleteSession(String sessionId);
+
+  Future<WorkoutSession> createSessionFromRoutineDay(
+    RoutineDay day, {
+    DateTime? workoutDate,
+  });
 }

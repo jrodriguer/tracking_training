@@ -38,6 +38,7 @@ void main() {
           id: 's-1',
           routineDayId: 'd-1',
           routineDayTitle: 'Day 1',
+          createdAt: DateTime(2026, 1, 10),
           startedAt: DateTime(2026, 1, 10, 9),
           updatedAt: DateTime(2026, 1, 10, 10),
           entries: [
@@ -118,6 +119,7 @@ void main() {
         id: 's-1',
         routineDayId: 'd-1',
         routineDayTitle: 'Day 1',
+        createdAt: DateTime(2026, 1, 10),
         startedAt: DateTime(2026, 1, 10),
         updatedAt: DateTime(2026, 1, 10),
         entries: [
@@ -185,6 +187,7 @@ WorkoutSession _session(
     id: id,
     routineDayId: 'd-1',
     routineDayTitle: 'Day 1',
+    createdAt: date,
     startedAt: date,
     updatedAt: date,
     entries: [
