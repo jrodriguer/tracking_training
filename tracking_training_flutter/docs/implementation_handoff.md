@@ -199,7 +199,6 @@ Minimum persistence rules:
 - Record reps, weight, and notes.
 - Edit and remove saved workout sessions.
 - Save session history without mutating the routine template.
-- Detailed execution plan: `docs/phase_3_delivery_planning.md`.
 
 ### Phase 4: Progress
 
