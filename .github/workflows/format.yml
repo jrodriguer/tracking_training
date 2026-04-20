@@ -13,13 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dart-lang/setup-dart@v1
+      # Install Flutter (includes Dart)
+      - uses: subosito/flutter-action@v2
         with:
-          sdk: 3.8.0
+          channel: stable
 
       - name: Install dependencies
         working-directory: tracking_training_server
-        run: dart pub get
+        run: flutter pub get
 
       - name: Check formatting
         working-directory: tracking_training_server
