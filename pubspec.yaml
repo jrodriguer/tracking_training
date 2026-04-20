@@ -1,4 +1,4 @@
-name: _
+name: tracking_training 
 publish_to: none
 
 environment:
@@ -8,4 +8,3 @@ workspace:
   - tracking_training_client
   - tracking_training_server
   - tracking_training_flutter
-
