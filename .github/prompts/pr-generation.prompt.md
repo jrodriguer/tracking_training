@@ -13,8 +13,7 @@ Execute the following workflow using GitHub's MCP:
    - push updates to the current PR branch
    - update the PR description with a markdown checklist showing progress and
      remaining work (for example, `- [x] done` and `- [ ] pending`)
-4. Keep the PR open for human review. Do **not** merge, close, or delete
-   branches.
+4. Keep the PR open for human review. Do **not** merge, close, or delete branches.
 5. Return a concise summary with what was committed and what remains pending.
 
 This workflow ensures consistent, clear, and traceable contributions.
