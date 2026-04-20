@@ -43,6 +43,15 @@ Flutter app flow and the Serverpod server workflows to matter for the branch.
    will prompt you for a summary, list of changes, and test evidence.
 3. Ensure CI is green before requesting a review.
 
+### PR Automation Prompt
+
+The PR automation prompt at `.github/prompts/pr-generation.prompt.md`
+(repository root) uses the same workflow expectations:
+
+1. Build commit messages using `docs/git.md`.
+2. Use `report_progress` to commit, push, and keep the PR checklist updated.
+3. Keep the PR open for human review (no automatic merge or branch cleanup).
+
 ## Getting Started
 
 For Flutter setup and local development, see the official documentation:

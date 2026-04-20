@@ -32,6 +32,16 @@ Every push and pull request targeting `main` runs the Flutter CI workflow
    will prompt you for a summary, list of changes, and test evidence.
 3. Ensure CI is green before requesting a review.
 
+### PR Automation Prompt
+
+The PR automation prompt at `.github/prompts/pr-generation.prompt.md` is aligned
+to this repository workflow:
+
+1. Prepare a commit message that follows
+   `tracking_training_flutter/docs/git.md`.
+2. Use `report_progress` to commit, push, and update the PR checklist.
+3. Keep the PR open for human review (no auto-merge or branch deletion).
+
 ## Getting Started
 
 For Flutter setup and local development, see the official documentation:
