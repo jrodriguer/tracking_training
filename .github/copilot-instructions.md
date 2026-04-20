@@ -24,8 +24,7 @@ If instructions conflict, follow this precedence:
 	- `tracking_training_client/` for the generated Serverpod client.
 - MVP scope and delivery phases for the product are defined in
 	`tracking_training_flutter/docs/implementation_handoff.md`.
-- Flutter app code lives under `tracking_training_flutter/lib/features/` and
-	`tracking_training_flutter/lib/shared/`.
+- Flutter app code lives under `tracking_training_flutter/lib/features/` and `tracking_training_flutter/lib/shared/`.
 - Server changes often require coordinated updates across server, client, and
 	Flutter app layers.
 
