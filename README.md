@@ -6,7 +6,7 @@ across iOS, Android, and web.
 ## Status
 
 The approved MVP scope and implementation guidance are documented in
-[docs/implementation_handoff.md](docs/implementation_handoff.md).
+[tracking_training_flutter/docs/implementation_handoff.md](tracking_training_flutter/docs/implementation_handoff.md).
 
 ## MVP Goals
 
@@ -37,8 +37,7 @@ Every push and pull request targeting `main` runs the Flutter CI workflow
 The PR automation prompt at `.github/prompts/pr-generation.prompt.md` is aligned
 to this repository workflow:
 
-1. Prepare a commit message that follows
-   `tracking_training_flutter/docs/git.md`.
+1. Prepare a concise commit message that summarizes your change.
 2. Use `report_progress` to commit, push, and update the PR checklist.
 3. Keep the PR open for human review (no auto-merge or branch deletion).
 

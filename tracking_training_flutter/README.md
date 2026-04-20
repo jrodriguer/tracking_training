@@ -48,7 +48,7 @@ Flutter app flow and the Serverpod server workflows to matter for the branch.
 The PR automation prompt at `.github/prompts/pr-generation.prompt.md`
 (repository root) uses the same workflow expectations:
 
-1. Build commit messages using `docs/git.md`.
+1. Build concise commit messages that summarize your changes.
 2. Use `report_progress` to commit, push, and keep the PR checklist updated.
 3. Keep the PR open for human review (no automatic merge or branch cleanup).
 

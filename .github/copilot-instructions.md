@@ -6,9 +6,8 @@ Before making changes, review these files in order:
 
 1. [tracking_training_flutter/README.md](../tracking_training_flutter/README.md)
 2. [tracking_training_flutter/docs/implementation_handoff.md](../tracking_training_flutter/docs/implementation_handoff.md)
-3. [tracking_training_flutter/docs/git.md](../tracking_training_flutter/docs/git.md)
-4. [tracking_training_server/README.md](../tracking_training_server/README.md)
-5. [tracking_training_client/README.md](../tracking_training_client/README.md)
+3. [tracking_training_server/README.md](../tracking_training_server/README.md)
+4. [tracking_training_client/README.md](../tracking_training_client/README.md)
 
 If instructions conflict, follow this precedence:
 
@@ -16,7 +15,6 @@ If instructions conflict, follow this precedence:
 2. `tracking_training_flutter/README.md`
 3. `tracking_training_server/README.md`
 4. `tracking_training_client/README.md`
-5. `tracking_training_flutter/docs/git.md`
 
 ## Project Context
 
@@ -26,7 +24,7 @@ If instructions conflict, follow this precedence:
 	- `tracking_training_client/` for the generated Serverpod client.
 - MVP scope and delivery phases for the product are defined in
 	`tracking_training_flutter/docs/implementation_handoff.md`.
-- Flutter app code lives under `lib/features/` and `lib/shared/` at the repo root.
+- Flutter app code lives under `tracking_training_flutter/lib/features/` and `tracking_training_flutter/lib/shared/`.
 - Server changes often require coordinated updates across server, client, and
 	Flutter app layers.
 
@@ -74,5 +72,4 @@ If instructions conflict, follow this precedence:
 
 ## Commit Message Notes
 
-When preparing commit messages, follow the format in
-[tracking_training_flutter/docs/git.md](../tracking_training_flutter/docs/git.md).
+Use concise commit titles that clearly summarize the change.
