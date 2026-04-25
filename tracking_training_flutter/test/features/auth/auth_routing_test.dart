@@ -1,12 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tracking_training_flutter/app/app.dart';
 import 'package:tracking_training_flutter/features/auth/application/auth_controller.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('Auth routing', () {
+    testWidgets(
+      'user with a persisted session is routed to the routines page on boot',
+      (tester) async {
+        // Simulate an email that was persisted from a previous run.
+        SharedPreferences.setMockInitialValues({
+          'fake_auth_email_v1': 'persisted@example.com',
+        });
+
+        await tester.pumpWidget(
+          const ProviderScope(child: TrackingTrainingApp()),
+        );
+        await tester.pumpAndSettle();
+
+        // Should land on the main app, not the login page.
+        expect(find.text('Routines'), findsWidgets);
+        expect(find.text('Sign in'), findsNothing);
+      },
+    );
+
     testWidgets('unauthenticated user is redirected to login page', (
       tester,
     ) async {

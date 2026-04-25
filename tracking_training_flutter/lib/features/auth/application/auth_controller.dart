@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/auth_service.dart';
+
 /// Represents the current authentication state of the app.
 sealed class AuthState {
   const AuthState();
@@ -17,36 +19,67 @@ final class SignedIn extends AuthState {
   final String email;
 }
 
+/// Exposes the [AuthService] implementation.  Replace [FakeAuthService] here
+/// to swap in a real provider such as Firebase Auth.
+final authServiceProvider = Provider<AuthService>((_) => FakeAuthService());
+
 final authControllerProvider = NotifierProvider<AuthController, AuthState>(
   AuthController.new,
 );
 
-/// Fake local auth controller.  A real provider such as Firebase Auth can
-/// be swapped in by replacing this implementation.
+/// Local auth controller.  A real provider can be swapped in by replacing
+/// [authServiceProvider].
 class AuthController extends Notifier<AuthState> {
   @override
-  AuthState build() => const SignedOut();
+  AuthState build() {
+    // Kick off async session restore; initial state is SignedOut.
+    ref.read(authServiceProvider).loadSession().then((session) {
+      if (session != null) state = SignedIn(session.email);
+    });
+    return const SignedOut();
+  }
 
-  /// Signs in with any non-empty [email] and [password].
+  /// Signs in with [email] and [password].
   ///
   /// Returns `true` on success, `false` when either field is empty.
-  bool signIn({required String email, required String password}) {
+  Future<bool> signIn({
+    required String email,
+    required String password,
+  }) async {
     if (email.isEmpty || password.isEmpty) return false;
-    state = SignedIn(email);
+    final session = await ref
+        .read(authServiceProvider)
+        .signIn(
+          email: email,
+          password: password,
+        );
+    state = SignedIn(session.email);
     return true;
   }
 
-  /// Registers a new account with any non-empty [email] and [password].
+  /// Registers a new account with [email] and [password].
   ///
   /// Returns `true` on success, `false` when either field is empty.
-  bool register({required String email, required String password}) {
+  Future<bool> register({
+    required String email,
+    required String password,
+  }) async {
     if (email.isEmpty || password.isEmpty) return false;
-    state = SignedIn(email);
+    final session = await ref
+        .read(authServiceProvider)
+        .register(
+          email: email,
+          password: password,
+        );
+    state = SignedIn(session.email);
     return true;
   }
 
   /// Signs the current user out.
-  void signOut() => state = const SignedOut();
+  Future<void> signOut() async {
+    await ref.read(authServiceProvider).signOut();
+    state = const SignedOut();
+  }
 }
 
 /// Convenience helper to derive a display label from [AuthState].

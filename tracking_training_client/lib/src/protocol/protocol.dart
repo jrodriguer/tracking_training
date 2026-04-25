@@ -11,12 +11,30 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod_client/serverpod_client.dart' as _i1;
-import 'greetings/greeting.dart' as _i2;
+import 'routines/exercise_template.dart' as _i2;
+import 'routines/routine_day.dart' as _i3;
+import 'workouts/workout_entry.dart' as _i4;
+import 'workouts/workout_session.dart' as _i5;
+import 'workouts/workout_set.dart' as _i6;
+import 'package:tracking_training_client/src/protocol/routines/routine_day.dart'
+    as _i7;
+import 'package:tracking_training_client/src/protocol/routines/exercise_template.dart'
+    as _i8;
+import 'package:tracking_training_client/src/protocol/workouts/workout_session.dart'
+    as _i9;
+import 'package:tracking_training_client/src/protocol/workouts/workout_entry.dart'
+    as _i10;
+import 'package:tracking_training_client/src/protocol/workouts/workout_set.dart'
+    as _i11;
 import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart'
-    as _i3;
+    as _i12;
 import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
-    as _i4;
-export 'greetings/greeting.dart';
+    as _i13;
+export 'routines/exercise_template.dart';
+export 'routines/routine_day.dart';
+export 'workouts/workout_entry.dart';
+export 'workouts/workout_session.dart';
+export 'workouts/workout_set.dart';
 export 'client.dart';
 
 class Protocol extends _i1.SerializationManager {
@@ -53,24 +71,87 @@ class Protocol extends _i1.SerializationManager {
       }
     }
 
-    if (t == _i2.Greeting) {
-      return _i2.Greeting.fromJson(data) as T;
+    if (t == _i2.ExerciseTemplate) {
+      return _i2.ExerciseTemplate.fromJson(data) as T;
     }
-    if (t == _i1.getType<_i2.Greeting?>()) {
-      return (data != null ? _i2.Greeting.fromJson(data) : null) as T;
+    if (t == _i3.RoutineDay) {
+      return _i3.RoutineDay.fromJson(data) as T;
+    }
+    if (t == _i4.WorkoutEntry) {
+      return _i4.WorkoutEntry.fromJson(data) as T;
+    }
+    if (t == _i5.WorkoutSession) {
+      return _i5.WorkoutSession.fromJson(data) as T;
+    }
+    if (t == _i6.WorkoutSet) {
+      return _i6.WorkoutSet.fromJson(data) as T;
+    }
+    if (t == _i1.getType<_i2.ExerciseTemplate?>()) {
+      return (data != null ? _i2.ExerciseTemplate.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i3.RoutineDay?>()) {
+      return (data != null ? _i3.RoutineDay.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i4.WorkoutEntry?>()) {
+      return (data != null ? _i4.WorkoutEntry.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i5.WorkoutSession?>()) {
+      return (data != null ? _i5.WorkoutSession.fromJson(data) : null) as T;
+    }
+    if (t == _i1.getType<_i6.WorkoutSet?>()) {
+      return (data != null ? _i6.WorkoutSet.fromJson(data) : null) as T;
+    }
+    if (t == List<String>) {
+      return (data as List).map((e) => deserialize<String>(e)).toList() as T;
+    }
+    if (t == List<_i7.RoutineDay>) {
+      return (data as List).map((e) => deserialize<_i7.RoutineDay>(e)).toList()
+          as T;
+    }
+    if (t == List<String>) {
+      return (data as List).map((e) => deserialize<String>(e)).toList() as T;
+    }
+    if (t == List<_i8.ExerciseTemplate>) {
+      return (data as List)
+              .map((e) => deserialize<_i8.ExerciseTemplate>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<int>) {
+      return (data as List).map((e) => deserialize<int>(e)).toList() as T;
+    }
+    if (t == List<_i9.WorkoutSession>) {
+      return (data as List)
+              .map((e) => deserialize<_i9.WorkoutSession>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<_i10.WorkoutEntry>) {
+      return (data as List)
+              .map((e) => deserialize<_i10.WorkoutEntry>(e))
+              .toList()
+          as T;
+    }
+    if (t == List<_i11.WorkoutSet>) {
+      return (data as List).map((e) => deserialize<_i11.WorkoutSet>(e)).toList()
+          as T;
     }
     try {
-      return _i3.Protocol().deserialize<T>(data, t);
+      return _i12.Protocol().deserialize<T>(data, t);
     } on _i1.DeserializationTypeNotFoundException catch (_) {}
     try {
-      return _i4.Protocol().deserialize<T>(data, t);
+      return _i13.Protocol().deserialize<T>(data, t);
     } on _i1.DeserializationTypeNotFoundException catch (_) {}
     return super.deserialize<T>(data, t);
   }
 
   static String? getClassNameForType(Type type) {
     return switch (type) {
-      _i2.Greeting => 'Greeting',
+      _i2.ExerciseTemplate => 'ExerciseTemplate',
+      _i3.RoutineDay => 'RoutineDay',
+      _i4.WorkoutEntry => 'WorkoutEntry',
+      _i5.WorkoutSession => 'WorkoutSession',
+      _i6.WorkoutSet => 'WorkoutSet',
       _ => null,
     };
   }
@@ -88,14 +169,22 @@ class Protocol extends _i1.SerializationManager {
     }
 
     switch (data) {
-      case _i2.Greeting():
-        return 'Greeting';
+      case _i2.ExerciseTemplate():
+        return 'ExerciseTemplate';
+      case _i3.RoutineDay():
+        return 'RoutineDay';
+      case _i4.WorkoutEntry():
+        return 'WorkoutEntry';
+      case _i5.WorkoutSession():
+        return 'WorkoutSession';
+      case _i6.WorkoutSet():
+        return 'WorkoutSet';
     }
-    className = _i3.Protocol().getClassNameForObject(data);
+    className = _i12.Protocol().getClassNameForObject(data);
     if (className != null) {
       return 'serverpod_auth_idp.$className';
     }
-    className = _i4.Protocol().getClassNameForObject(data);
+    className = _i13.Protocol().getClassNameForObject(data);
     if (className != null) {
       return 'serverpod_auth_core.$className';
     }
@@ -108,16 +197,28 @@ class Protocol extends _i1.SerializationManager {
     if (dataClassName is! String) {
       return super.deserializeByClassName(data);
     }
-    if (dataClassName == 'Greeting') {
-      return deserialize<_i2.Greeting>(data['data']);
+    if (dataClassName == 'ExerciseTemplate') {
+      return deserialize<_i2.ExerciseTemplate>(data['data']);
+    }
+    if (dataClassName == 'RoutineDay') {
+      return deserialize<_i3.RoutineDay>(data['data']);
+    }
+    if (dataClassName == 'WorkoutEntry') {
+      return deserialize<_i4.WorkoutEntry>(data['data']);
+    }
+    if (dataClassName == 'WorkoutSession') {
+      return deserialize<_i5.WorkoutSession>(data['data']);
+    }
+    if (dataClassName == 'WorkoutSet') {
+      return deserialize<_i6.WorkoutSet>(data['data']);
     }
     if (dataClassName.startsWith('serverpod_auth_idp.')) {
       data['className'] = dataClassName.substring(19);
-      return _i3.Protocol().deserializeByClassName(data);
+      return _i12.Protocol().deserializeByClassName(data);
     }
     if (dataClassName.startsWith('serverpod_auth_core.')) {
       data['className'] = dataClassName.substring(20);
-      return _i4.Protocol().deserializeByClassName(data);
+      return _i13.Protocol().deserializeByClassName(data);
     }
     return super.deserializeByClassName(data);
   }
@@ -132,10 +233,10 @@ class Protocol extends _i1.SerializationManager {
       return null;
     }
     try {
-      return _i3.Protocol().mapRecordToJson(record);
+      return _i12.Protocol().mapRecordToJson(record);
     } catch (_) {}
     try {
-      return _i4.Protocol().mapRecordToJson(record);
+      return _i13.Protocol().mapRecordToJson(record);
     } catch (_) {}
     throw Exception('Unsupported record type ${record.runtimeType}');
   }

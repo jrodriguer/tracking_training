@@ -1,0 +1,15 @@
+# Routine day — one day in the weekly split.
+class: RoutineDay
+table: routine_days
+
+fields:
+  ### Display title (e.g. "Day 1" or a user-chosen name).
+  title: String
+  ### Position in the weekly split, starting at 0.
+  sortOrder: int
+  ### Muscle-group labels for this day (e.g. ["Chest", "Shoulders"]).
+  focusAreas: List<String>
+  ### When this record was first created.
+  createdAt: DateTime
+  ### When this record was last modified.
+  updatedAt: DateTime

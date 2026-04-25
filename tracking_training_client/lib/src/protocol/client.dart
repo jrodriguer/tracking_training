@@ -16,9 +16,17 @@ import 'package:serverpod_client/serverpod_client.dart' as _i2;
 import 'dart:async' as _i3;
 import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
     as _i4;
-import 'package:tracking_training_client/src/protocol/greetings/greeting.dart'
+import 'package:tracking_training_client/src/protocol/routines/routine_day.dart'
     as _i5;
-import 'protocol.dart' as _i6;
+import 'package:tracking_training_client/src/protocol/routines/exercise_template.dart'
+    as _i6;
+import 'package:tracking_training_client/src/protocol/workouts/workout_session.dart'
+    as _i7;
+import 'package:tracking_training_client/src/protocol/workouts/workout_entry.dart'
+    as _i8;
+import 'package:tracking_training_client/src/protocol/workouts/workout_set.dart'
+    as _i9;
+import 'protocol.dart' as _i10;
 
 /// By extending [EmailIdpBaseEndpoint], the email identity provider endpoints
 /// are made available on the server and enable the corresponding sign-in widget
@@ -241,21 +249,194 @@ class EndpointJwtRefresh extends _i4.EndpointRefreshJwtTokens {
   );
 }
 
-/// This is an example endpoint that returns a greeting message through
-/// its [hello] method.
+/// Manages the weekly routine split: days, focus areas, and exercises.
 /// {@category Endpoint}
-class EndpointGreeting extends _i2.EndpointRef {
-  EndpointGreeting(_i2.EndpointCaller caller) : super(caller);
+class EndpointRoutine extends _i2.EndpointRef {
+  EndpointRoutine(_i2.EndpointCaller caller) : super(caller);
 
   @override
-  String get name => 'greeting';
+  String get name => 'routine';
 
-  /// Returns a personalized greeting message: "Hello {name}".
-  _i3.Future<_i5.Greeting> hello(String name) =>
-      caller.callServerEndpoint<_i5.Greeting>(
-        'greeting',
-        'hello',
-        {'name': name},
+  /// Returns all routine days ordered by [RoutineDay.sortOrder].
+  _i3.Future<List<_i5.RoutineDay>> getRoutineDays() =>
+      caller.callServerEndpoint<List<_i5.RoutineDay>>(
+        'routine',
+        'getRoutineDays',
+        {},
+      );
+
+  /// Updates a routine day's display title and focus-area labels.
+  _i3.Future<void> updateRoutineDay({
+    required int dayId,
+    required String title,
+    required List<String> focusAreas,
+  }) => caller.callServerEndpoint<void>(
+    'routine',
+    'updateRoutineDay',
+    {
+      'dayId': dayId,
+      'title': title,
+      'focusAreas': focusAreas,
+    },
+  );
+
+  /// Returns all exercises for [dayId] ordered by [ExerciseTemplate.sortOrder].
+  _i3.Future<List<_i6.ExerciseTemplate>> getExercises({required int dayId}) =>
+      caller.callServerEndpoint<List<_i6.ExerciseTemplate>>(
+        'routine',
+        'getExercises',
+        {'dayId': dayId},
+      );
+
+  /// Appends a new exercise to [dayId] and returns the persisted record.
+  _i3.Future<_i6.ExerciseTemplate> addExercise({
+    required int dayId,
+    required String name,
+    String? note,
+  }) => caller.callServerEndpoint<_i6.ExerciseTemplate>(
+    'routine',
+    'addExercise',
+    {
+      'dayId': dayId,
+      'name': name,
+      'note': note,
+    },
+  );
+
+  /// Updates the name and optional note for an exercise.
+  _i3.Future<void> updateExercise({
+    required int exerciseId,
+    required String name,
+    String? note,
+  }) => caller.callServerEndpoint<void>(
+    'routine',
+    'updateExercise',
+    {
+      'exerciseId': exerciseId,
+      'name': name,
+      'note': note,
+    },
+  );
+
+  /// Removes an exercise.
+  _i3.Future<void> removeExercise({required int exerciseId}) =>
+      caller.callServerEndpoint<void>(
+        'routine',
+        'removeExercise',
+        {'exerciseId': exerciseId},
+      );
+
+  /// Reorders exercises within [dayId] to match [exerciseIdsInOrder].
+  ///
+  /// Each element of [exerciseIdsInOrder] is assigned a [sortOrder] equal to
+  /// its list index.
+  _i3.Future<void> reorderExercises({
+    required int dayId,
+    required List<int> exerciseIdsInOrder,
+  }) => caller.callServerEndpoint<void>(
+    'routine',
+    'reorderExercises',
+    {
+      'dayId': dayId,
+      'exerciseIdsInOrder': exerciseIdsInOrder,
+    },
+  );
+}
+
+/// Manages dated workout sessions and their set-level history.
+///
+/// Session data is stored independently of routine templates so that editing
+/// or removing a routine day never mutates historical workout records.
+/// {@category Endpoint}
+class EndpointWorkout extends _i2.EndpointRef {
+  EndpointWorkout(_i2.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'workout';
+
+  /// Returns all sessions ordered newest first.
+  _i3.Future<List<_i7.WorkoutSession>> listSessions() =>
+      caller.callServerEndpoint<List<_i7.WorkoutSession>>(
+        'workout',
+        'listSessions',
+        {},
+      );
+
+  /// Returns a single session by ID, or `null` when not found.
+  _i3.Future<_i7.WorkoutSession?> getSession({required int sessionId}) =>
+      caller.callServerEndpoint<_i7.WorkoutSession?>(
+        'workout',
+        'getSession',
+        {'sessionId': sessionId},
+      );
+
+  /// Creates a new workout session from a routine day.
+  ///
+  /// Snapshots the routine day title and exercise names at creation time so
+  /// subsequent routine edits do not affect this historical record.  One
+  /// default set is created for each exercise entry.
+  _i3.Future<_i7.WorkoutSession> createSessionFromRoutineDay({
+    required int routineDayId,
+    required DateTime workoutDate,
+  }) => caller.callServerEndpoint<_i7.WorkoutSession>(
+    'workout',
+    'createSessionFromRoutineDay',
+    {
+      'routineDayId': routineDayId,
+      'workoutDate': workoutDate,
+    },
+  );
+
+  /// Updates the metadata for an existing session row (title, startedAt).
+  ///
+  /// This only updates the [WorkoutSession] row. To modify entries and sets
+  /// use [saveSet] and [deleteSet].
+  _i3.Future<void> updateSessionMetadata({
+    required _i7.WorkoutSession workoutSession,
+  }) => caller.callServerEndpoint<void>(
+    'workout',
+    'updateSessionMetadata',
+    {'workoutSession': workoutSession},
+  );
+
+  /// Deletes a session and all its entries and sets.
+  _i3.Future<void> deleteSession({required int sessionId}) =>
+      caller.callServerEndpoint<void>(
+        'workout',
+        'deleteSession',
+        {'sessionId': sessionId},
+      );
+
+  /// Returns all entries for [sessionId].
+  _i3.Future<List<_i8.WorkoutEntry>> getEntries({required int sessionId}) =>
+      caller.callServerEndpoint<List<_i8.WorkoutEntry>>(
+        'workout',
+        'getEntries',
+        {'sessionId': sessionId},
+      );
+
+  /// Returns all sets for [entryId].
+  _i3.Future<List<_i9.WorkoutSet>> getSets({required int entryId}) =>
+      caller.callServerEndpoint<List<_i9.WorkoutSet>>(
+        'workout',
+        'getSets',
+        {'entryId': entryId},
+      );
+
+  /// Upserts a single set.
+  _i3.Future<_i9.WorkoutSet> saveSet({required _i9.WorkoutSet workoutSet}) =>
+      caller.callServerEndpoint<_i9.WorkoutSet>(
+        'workout',
+        'saveSet',
+        {'workoutSet': workoutSet},
+      );
+
+  /// Removes a set by ID.
+  _i3.Future<void> deleteSet({required int setId}) =>
+      caller.callServerEndpoint<void>(
+        'workout',
+        'deleteSet',
+        {'setId': setId},
       );
 }
 
@@ -290,7 +471,7 @@ class Client extends _i2.ServerpodClientShared {
     bool? disconnectStreamsOnLostInternetConnection,
   }) : super(
          host,
-         _i6.Protocol(),
+         _i10.Protocol(),
          securityContext: securityContext,
          streamingConnectionTimeout: streamingConnectionTimeout,
          connectionTimeout: connectionTimeout,
@@ -301,7 +482,8 @@ class Client extends _i2.ServerpodClientShared {
        ) {
     emailIdp = EndpointEmailIdp(this);
     jwtRefresh = EndpointJwtRefresh(this);
-    greeting = EndpointGreeting(this);
+    routine = EndpointRoutine(this);
+    workout = EndpointWorkout(this);
     modules = Modules(this);
   }
 
@@ -309,7 +491,9 @@ class Client extends _i2.ServerpodClientShared {
 
   late final EndpointJwtRefresh jwtRefresh;
 
-  late final EndpointGreeting greeting;
+  late final EndpointRoutine routine;
+
+  late final EndpointWorkout workout;
 
   late final Modules modules;
 
@@ -317,7 +501,8 @@ class Client extends _i2.ServerpodClientShared {
   Map<String, _i2.EndpointRef> get endpointRefLookup => {
     'emailIdp': emailIdp,
     'jwtRefresh': jwtRefresh,
-    'greeting': greeting,
+    'routine': routine,
+    'workout': workout,
   };
 
   @override

@@ -1,0 +1,16 @@
+# A dated workout session created from a routine day.
+class: WorkoutSession
+table: workout_sessions
+
+fields:
+  ### The routine day this session was started from.
+  routineDayId: int
+  ### Snapshot of the routine day title at the time the session was created.
+  ### Kept separate so routine renames do not mutate historical records.
+  routineDayTitle: String
+  ### User-selected workout date (may be earlier than [createdAt]).
+  startedAt: DateTime
+  ### Wall-clock time when this record was first saved.
+  createdAt: DateTime
+  ### Wall-clock time when this record was last modified.
+  updatedAt: DateTime

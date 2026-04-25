@@ -1,9 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tracking_training_flutter/features/auth/application/auth_controller.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   ProviderContainer makeContainer() {
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -17,10 +22,10 @@ void main() {
     });
 
     group('signIn', () {
-      test('transitions to SignedIn with the provided email', () {
+      test('transitions to SignedIn with the provided email', () async {
         final container = makeContainer();
 
-        final ok = container
+        final ok = await container
             .read(authControllerProvider.notifier)
             .signIn(email: 'user@example.com', password: 'secret1');
 
@@ -30,10 +35,10 @@ void main() {
         expect((state as SignedIn).email, 'user@example.com');
       });
 
-      test('returns false and keeps SignedOut when email is empty', () {
+      test('returns false and keeps SignedOut when email is empty', () async {
         final container = makeContainer();
 
-        final ok = container
+        final ok = await container
             .read(authControllerProvider.notifier)
             .signIn(email: '', password: 'secret1');
 
@@ -41,23 +46,26 @@ void main() {
         expect(container.read(authControllerProvider), isA<SignedOut>());
       });
 
-      test('returns false and keeps SignedOut when password is empty', () {
-        final container = makeContainer();
+      test(
+        'returns false and keeps SignedOut when password is empty',
+        () async {
+          final container = makeContainer();
 
-        final ok = container
-            .read(authControllerProvider.notifier)
-            .signIn(email: 'user@example.com', password: '');
+          final ok = await container
+              .read(authControllerProvider.notifier)
+              .signIn(email: 'user@example.com', password: '');
 
-        expect(ok, isFalse);
-        expect(container.read(authControllerProvider), isA<SignedOut>());
-      });
+          expect(ok, isFalse);
+          expect(container.read(authControllerProvider), isA<SignedOut>());
+        },
+      );
     });
 
     group('register', () {
-      test('transitions to SignedIn with the provided email', () {
+      test('transitions to SignedIn with the provided email', () async {
         final container = makeContainer();
 
-        final ok = container
+        final ok = await container
             .read(authControllerProvider.notifier)
             .register(email: 'new@example.com', password: 'pass123');
 
@@ -67,10 +75,10 @@ void main() {
         expect((state as SignedIn).email, 'new@example.com');
       });
 
-      test('returns false when email is empty', () {
+      test('returns false when email is empty', () async {
         final container = makeContainer();
 
-        final ok = container
+        final ok = await container
             .read(authControllerProvider.notifier)
             .register(email: '', password: 'pass123');
 
@@ -80,16 +88,64 @@ void main() {
     });
 
     group('signOut', () {
-      test('transitions from SignedIn back to SignedOut', () {
+      test('transitions from SignedIn back to SignedOut', () async {
         final container = makeContainer();
 
-        container
+        await container
             .read(authControllerProvider.notifier)
             .signIn(email: 'user@example.com', password: 'pass123');
         expect(container.read(authControllerProvider), isA<SignedIn>());
 
-        container.read(authControllerProvider.notifier).signOut();
+        await container.read(authControllerProvider.notifier).signOut();
         expect(container.read(authControllerProvider), isA<SignedOut>());
+      });
+    });
+
+    group('session persistence', () {
+      test('build restores a persisted session on startup', () async {
+        SharedPreferences.setMockInitialValues({
+          'fake_auth_email_v1': 'persisted@example.com',
+        });
+
+        final container = makeContainer();
+        // Allow the async loadSession() future to complete.
+        await Future<void>.delayed(Duration.zero);
+
+        expect(container.read(authControllerProvider), isA<SignedIn>());
+        expect(
+          (container.read(authControllerProvider) as SignedIn).email,
+          'persisted@example.com',
+        );
+      });
+
+      test('signIn persists email so a new container can restore it', () async {
+        final container = makeContainer();
+        await container
+            .read(authControllerProvider.notifier)
+            .signIn(email: 'save@example.com', password: 'abc123');
+
+        // Simulate app restart with a fresh container.
+        final container2 = makeContainer();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(container2.read(authControllerProvider), isA<SignedIn>());
+        expect(
+          (container2.read(authControllerProvider) as SignedIn).email,
+          'save@example.com',
+        );
+      });
+
+      test('signOut clears the persisted session', () async {
+        final container = makeContainer();
+        await container
+            .read(authControllerProvider.notifier)
+            .signIn(email: 'user@example.com', password: 'abc123');
+        await container.read(authControllerProvider.notifier).signOut();
+
+        final container2 = makeContainer();
+        await Future<void>.delayed(Duration.zero);
+
+        expect(container2.read(authControllerProvider), isA<SignedOut>());
       });
     });
   });

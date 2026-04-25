@@ -22,6 +22,14 @@ jobs:
         working-directory: tracking_training_server
         run: dart pub get
 
+      - name: Install Serverpod CLI
+        working-directory: tracking_training_server
+        run: dart pub global activate serverpod_cli 3.4.5
+
+      - name: Run Serverpod generator
+        working-directory: tracking_training_server
+        run: serverpod generate
+
       - name: Analyze (server)
         working-directory: tracking_training_server
         run: dart analyze --fatal-infos

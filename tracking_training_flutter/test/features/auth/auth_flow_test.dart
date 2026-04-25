@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tracking_training_flutter/app/app.dart';
 import 'package:tracking_training_flutter/features/auth/application/auth_controller.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('routines route is protected when user is signed out', (
     WidgetTester tester,
   ) async {

@@ -13,11 +13,16 @@
 import 'package:serverpod/serverpod.dart' as _i1;
 import '../auth/email_idp_endpoint.dart' as _i2;
 import '../auth/jwt_refresh_endpoint.dart' as _i3;
-import '../greetings/greeting_endpoint.dart' as _i4;
-import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
-    as _i5;
-import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
+import '../routines/routine_endpoint.dart' as _i4;
+import '../workouts/workout_endpoint.dart' as _i5;
+import 'package:tracking_training_server/src/generated/workouts/workout_session.dart'
     as _i6;
+import 'package:tracking_training_server/src/generated/workouts/workout_set.dart'
+    as _i7;
+import 'package:serverpod_auth_idp_server/serverpod_auth_idp_server.dart'
+    as _i8;
+import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
+    as _i9;
 
 class Endpoints extends _i1.EndpointDispatch {
   @override
@@ -35,10 +40,16 @@ class Endpoints extends _i1.EndpointDispatch {
           'jwtRefresh',
           null,
         ),
-      'greeting': _i4.GreetingEndpoint()
+      'routine': _i4.RoutineEndpoint()
         ..initialize(
           server,
-          'greeting',
+          'routine',
+          null,
+        ),
+      'workout': _i5.WorkoutEndpoint()
+        ..initialize(
+          server,
+          'workout',
           null,
         ),
     };
@@ -246,16 +257,36 @@ class Endpoints extends _i1.EndpointDispatch {
         ),
       },
     );
-    connectors['greeting'] = _i1.EndpointConnector(
-      name: 'greeting',
-      endpoint: endpoints['greeting']!,
+    connectors['routine'] = _i1.EndpointConnector(
+      name: 'routine',
+      endpoint: endpoints['routine']!,
       methodConnectors: {
-        'hello': _i1.MethodConnector(
-          name: 'hello',
+        'getRoutineDays': _i1.MethodConnector(
+          name: 'getRoutineDays',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['routine'] as _i4.RoutineEndpoint)
+                  .getRoutineDays(session),
+        ),
+        'updateRoutineDay': _i1.MethodConnector(
+          name: 'updateRoutineDay',
           params: {
-            'name': _i1.ParameterDescription(
-              name: 'name',
+            'dayId': _i1.ParameterDescription(
+              name: 'dayId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'title': _i1.ParameterDescription(
+              name: 'title',
               type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'focusAreas': _i1.ParameterDescription(
+              name: 'focusAreas',
+              type: _i1.getType<List<String>>(),
               nullable: false,
             ),
           },
@@ -263,16 +294,316 @@ class Endpoints extends _i1.EndpointDispatch {
               (
                 _i1.Session session,
                 Map<String, dynamic> params,
-              ) async => (endpoints['greeting'] as _i4.GreetingEndpoint).hello(
-                session,
-                params['name'],
-              ),
+              ) async => (endpoints['routine'] as _i4.RoutineEndpoint)
+                  .updateRoutineDay(
+                    session,
+                    dayId: params['dayId'],
+                    title: params['title'],
+                    focusAreas: params['focusAreas'],
+                  ),
+        ),
+        'getExercises': _i1.MethodConnector(
+          name: 'getExercises',
+          params: {
+            'dayId': _i1.ParameterDescription(
+              name: 'dayId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['routine'] as _i4.RoutineEndpoint).getExercises(
+                    session,
+                    dayId: params['dayId'],
+                  ),
+        ),
+        'addExercise': _i1.MethodConnector(
+          name: 'addExercise',
+          params: {
+            'dayId': _i1.ParameterDescription(
+              name: 'dayId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'name': _i1.ParameterDescription(
+              name: 'name',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'note': _i1.ParameterDescription(
+              name: 'note',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['routine'] as _i4.RoutineEndpoint).addExercise(
+                    session,
+                    dayId: params['dayId'],
+                    name: params['name'],
+                    note: params['note'],
+                  ),
+        ),
+        'updateExercise': _i1.MethodConnector(
+          name: 'updateExercise',
+          params: {
+            'exerciseId': _i1.ParameterDescription(
+              name: 'exerciseId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'name': _i1.ParameterDescription(
+              name: 'name',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'note': _i1.ParameterDescription(
+              name: 'note',
+              type: _i1.getType<String?>(),
+              nullable: true,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['routine'] as _i4.RoutineEndpoint).updateExercise(
+                    session,
+                    exerciseId: params['exerciseId'],
+                    name: params['name'],
+                    note: params['note'],
+                  ),
+        ),
+        'removeExercise': _i1.MethodConnector(
+          name: 'removeExercise',
+          params: {
+            'exerciseId': _i1.ParameterDescription(
+              name: 'exerciseId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['routine'] as _i4.RoutineEndpoint).removeExercise(
+                    session,
+                    exerciseId: params['exerciseId'],
+                  ),
+        ),
+        'reorderExercises': _i1.MethodConnector(
+          name: 'reorderExercises',
+          params: {
+            'dayId': _i1.ParameterDescription(
+              name: 'dayId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'exerciseIdsInOrder': _i1.ParameterDescription(
+              name: 'exerciseIdsInOrder',
+              type: _i1.getType<List<int>>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['routine'] as _i4.RoutineEndpoint)
+                  .reorderExercises(
+                    session,
+                    dayId: params['dayId'],
+                    exerciseIdsInOrder: params['exerciseIdsInOrder'],
+                  ),
         ),
       },
     );
-    modules['serverpod_auth_idp'] = _i5.Endpoints()
+    connectors['workout'] = _i1.EndpointConnector(
+      name: 'workout',
+      endpoint: endpoints['workout']!,
+      methodConnectors: {
+        'listSessions': _i1.MethodConnector(
+          name: 'listSessions',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['workout'] as _i5.WorkoutEndpoint)
+                  .listSessions(session),
+        ),
+        'getSession': _i1.MethodConnector(
+          name: 'getSession',
+          params: {
+            'sessionId': _i1.ParameterDescription(
+              name: 'sessionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['workout'] as _i5.WorkoutEndpoint).getSession(
+                    session,
+                    sessionId: params['sessionId'],
+                  ),
+        ),
+        'createSessionFromRoutineDay': _i1.MethodConnector(
+          name: 'createSessionFromRoutineDay',
+          params: {
+            'routineDayId': _i1.ParameterDescription(
+              name: 'routineDayId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+            'workoutDate': _i1.ParameterDescription(
+              name: 'workoutDate',
+              type: _i1.getType<DateTime>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['workout'] as _i5.WorkoutEndpoint)
+                  .createSessionFromRoutineDay(
+                    session,
+                    routineDayId: params['routineDayId'],
+                    workoutDate: params['workoutDate'],
+                  ),
+        ),
+        'updateSessionMetadata': _i1.MethodConnector(
+          name: 'updateSessionMetadata',
+          params: {
+            'workoutSession': _i1.ParameterDescription(
+              name: 'workoutSession',
+              type: _i1.getType<_i6.WorkoutSession>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['workout'] as _i5.WorkoutEndpoint)
+                  .updateSessionMetadata(
+                    session,
+                    workoutSession: params['workoutSession'],
+                  ),
+        ),
+        'deleteSession': _i1.MethodConnector(
+          name: 'deleteSession',
+          params: {
+            'sessionId': _i1.ParameterDescription(
+              name: 'sessionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['workout'] as _i5.WorkoutEndpoint).deleteSession(
+                    session,
+                    sessionId: params['sessionId'],
+                  ),
+        ),
+        'getEntries': _i1.MethodConnector(
+          name: 'getEntries',
+          params: {
+            'sessionId': _i1.ParameterDescription(
+              name: 'sessionId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['workout'] as _i5.WorkoutEndpoint).getEntries(
+                    session,
+                    sessionId: params['sessionId'],
+                  ),
+        ),
+        'getSets': _i1.MethodConnector(
+          name: 'getSets',
+          params: {
+            'entryId': _i1.ParameterDescription(
+              name: 'entryId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['workout'] as _i5.WorkoutEndpoint).getSets(
+                session,
+                entryId: params['entryId'],
+              ),
+        ),
+        'saveSet': _i1.MethodConnector(
+          name: 'saveSet',
+          params: {
+            'workoutSet': _i1.ParameterDescription(
+              name: 'workoutSet',
+              type: _i1.getType<_i7.WorkoutSet>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['workout'] as _i5.WorkoutEndpoint).saveSet(
+                session,
+                workoutSet: params['workoutSet'],
+              ),
+        ),
+        'deleteSet': _i1.MethodConnector(
+          name: 'deleteSet',
+          params: {
+            'setId': _i1.ParameterDescription(
+              name: 'setId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['workout'] as _i5.WorkoutEndpoint).deleteSet(
+                    session,
+                    setId: params['setId'],
+                  ),
+        ),
+      },
+    );
+    modules['serverpod_auth_idp'] = _i8.Endpoints()
       ..initializeEndpoints(server);
-    modules['serverpod_auth_core'] = _i6.Endpoints()
+    modules['serverpod_auth_core'] = _i9.Endpoints()
       ..initializeEndpoints(server);
   }
 }

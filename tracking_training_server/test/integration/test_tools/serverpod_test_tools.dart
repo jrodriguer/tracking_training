@@ -16,8 +16,16 @@ import 'package:serverpod/serverpod.dart' as _i2;
 import 'dart:async' as _i3;
 import 'package:serverpod_auth_core_server/serverpod_auth_core_server.dart'
     as _i4;
-import 'package:tracking_training_server/src/generated/greetings/greeting.dart'
+import 'package:tracking_training_server/src/generated/routines/routine_day.dart'
     as _i5;
+import 'package:tracking_training_server/src/generated/routines/exercise_template.dart'
+    as _i6;
+import 'package:tracking_training_server/src/generated/workouts/workout_session.dart'
+    as _i7;
+import 'package:tracking_training_server/src/generated/workouts/workout_entry.dart'
+    as _i8;
+import 'package:tracking_training_server/src/generated/workouts/workout_set.dart'
+    as _i9;
 import 'package:tracking_training_server/src/generated/protocol.dart';
 import 'package:tracking_training_server/src/generated/endpoints.dart';
 export 'package:serverpod_test/serverpod_test_public_exports.dart';
@@ -27,10 +35,10 @@ export 'package:serverpod_test/serverpod_test_public_exports.dart';
 /// `sessionBuilder` is used to build a `Session` object that represents the server state during an endpoint call and is used to set up scenarios.
 /// `endpoints` contains all your Serverpod endpoints and lets you call them:
 /// ```dart
-/// withServerpod('Given Example endpoint', (sessionBuilder, endpoints) {
-///   test('when calling `hello` then should return greeting', () async {
-///     final greeting = await endpoints.example.hello(sessionBuilder, 'Michael');
-///     expect(greeting, 'Hello Michael');
+/// withServerpod('Given routine endpoint', (sessionBuilder, endpoints) {
+///   test('returns routine days', () async {
+///     final days = await endpoints.routine.getRoutineDays(sessionBuilder);
+///     expect(days, isA<List<RoutineDay>>());
 ///   });
 /// });
 /// ```
@@ -129,7 +137,9 @@ class TestEndpoints {
 
   late final _JwtRefreshEndpoint jwtRefresh;
 
-  late final _GreetingEndpoint greeting;
+  late final _RoutineEndpoint routine;
+
+  late final _WorkoutEndpoint workout;
 }
 
 class _InternalTestEndpoints extends TestEndpoints
@@ -147,7 +157,11 @@ class _InternalTestEndpoints extends TestEndpoints
       endpoints,
       serializationManager,
     );
-    greeting = _GreetingEndpoint(
+    routine = _RoutineEndpoint(
+      endpoints,
+      serializationManager,
+    );
+    workout = _WorkoutEndpoint(
       endpoints,
       serializationManager,
     );
@@ -472,8 +486,8 @@ class _JwtRefreshEndpoint {
   }
 }
 
-class _GreetingEndpoint {
-  _GreetingEndpoint(
+class _RoutineEndpoint {
+  _RoutineEndpoint(
     this._endpointDispatch,
     this._serializationManager,
   );
@@ -482,22 +496,21 @@ class _GreetingEndpoint {
 
   final _i2.SerializationManager _serializationManager;
 
-  _i3.Future<_i5.Greeting> hello(
+  _i3.Future<List<_i5.RoutineDay>> getRoutineDays(
     _i1.TestSessionBuilder sessionBuilder,
-    String name,
   ) async {
     return _i1.callAwaitableFunctionAndHandleExceptions(() async {
       var _localUniqueSession =
           (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
-            endpoint: 'greeting',
-            method: 'hello',
+            endpoint: 'routine',
+            method: 'getRoutineDays',
           );
       try {
         var _localCallContext = await _endpointDispatch.getMethodCallContext(
           createSessionCallback: (_) => _localUniqueSession,
-          endpointPath: 'greeting',
-          methodName: 'hello',
-          parameters: _i1.testObjectToJson({'name': name}),
+          endpointPath: 'routine',
+          methodName: 'getRoutineDays',
+          parameters: _i1.testObjectToJson({}),
           serializationManager: _serializationManager,
         );
         var _localReturnValue =
@@ -505,7 +518,508 @@ class _GreetingEndpoint {
                   _localUniqueSession,
                   _localCallContext.arguments,
                 )
-                as _i3.Future<_i5.Greeting>);
+                as _i3.Future<List<_i5.RoutineDay>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<void> updateRoutineDay(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int dayId,
+    required String title,
+    required List<String> focusAreas,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'routine',
+            method: 'updateRoutineDay',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'routine',
+          methodName: 'updateRoutineDay',
+          parameters: _i1.testObjectToJson({
+            'dayId': dayId,
+            'title': title,
+            'focusAreas': focusAreas,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<void>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<List<_i6.ExerciseTemplate>> getExercises(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int dayId,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'routine',
+            method: 'getExercises',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'routine',
+          methodName: 'getExercises',
+          parameters: _i1.testObjectToJson({'dayId': dayId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<List<_i6.ExerciseTemplate>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<_i6.ExerciseTemplate> addExercise(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int dayId,
+    required String name,
+    String? note,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'routine',
+            method: 'addExercise',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'routine',
+          methodName: 'addExercise',
+          parameters: _i1.testObjectToJson({
+            'dayId': dayId,
+            'name': name,
+            'note': note,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i6.ExerciseTemplate>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<void> updateExercise(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int exerciseId,
+    required String name,
+    String? note,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'routine',
+            method: 'updateExercise',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'routine',
+          methodName: 'updateExercise',
+          parameters: _i1.testObjectToJson({
+            'exerciseId': exerciseId,
+            'name': name,
+            'note': note,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<void>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<void> removeExercise(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int exerciseId,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'routine',
+            method: 'removeExercise',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'routine',
+          methodName: 'removeExercise',
+          parameters: _i1.testObjectToJson({'exerciseId': exerciseId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<void>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<void> reorderExercises(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int dayId,
+    required List<int> exerciseIdsInOrder,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'routine',
+            method: 'reorderExercises',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'routine',
+          methodName: 'reorderExercises',
+          parameters: _i1.testObjectToJson({
+            'dayId': dayId,
+            'exerciseIdsInOrder': exerciseIdsInOrder,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<void>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+}
+
+class _WorkoutEndpoint {
+  _WorkoutEndpoint(
+    this._endpointDispatch,
+    this._serializationManager,
+  );
+
+  final _i2.EndpointDispatch _endpointDispatch;
+
+  final _i2.SerializationManager _serializationManager;
+
+  _i3.Future<List<_i7.WorkoutSession>> listSessions(
+    _i1.TestSessionBuilder sessionBuilder,
+  ) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'workout',
+            method: 'listSessions',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'workout',
+          methodName: 'listSessions',
+          parameters: _i1.testObjectToJson({}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<List<_i7.WorkoutSession>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<_i7.WorkoutSession?> getSession(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int sessionId,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'workout',
+            method: 'getSession',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'workout',
+          methodName: 'getSession',
+          parameters: _i1.testObjectToJson({'sessionId': sessionId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i7.WorkoutSession?>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<_i7.WorkoutSession> createSessionFromRoutineDay(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int routineDayId,
+    required DateTime workoutDate,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'workout',
+            method: 'createSessionFromRoutineDay',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'workout',
+          methodName: 'createSessionFromRoutineDay',
+          parameters: _i1.testObjectToJson({
+            'routineDayId': routineDayId,
+            'workoutDate': workoutDate,
+          }),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i7.WorkoutSession>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<void> updateSessionMetadata(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required _i7.WorkoutSession workoutSession,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'workout',
+            method: 'updateSessionMetadata',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'workout',
+          methodName: 'updateSessionMetadata',
+          parameters: _i1.testObjectToJson({'workoutSession': workoutSession}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<void>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<void> deleteSession(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int sessionId,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'workout',
+            method: 'deleteSession',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'workout',
+          methodName: 'deleteSession',
+          parameters: _i1.testObjectToJson({'sessionId': sessionId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<void>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<List<_i8.WorkoutEntry>> getEntries(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int sessionId,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'workout',
+            method: 'getEntries',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'workout',
+          methodName: 'getEntries',
+          parameters: _i1.testObjectToJson({'sessionId': sessionId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<List<_i8.WorkoutEntry>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<List<_i9.WorkoutSet>> getSets(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int entryId,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'workout',
+            method: 'getSets',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'workout',
+          methodName: 'getSets',
+          parameters: _i1.testObjectToJson({'entryId': entryId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<List<_i9.WorkoutSet>>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<_i9.WorkoutSet> saveSet(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required _i9.WorkoutSet workoutSet,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'workout',
+            method: 'saveSet',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'workout',
+          methodName: 'saveSet',
+          parameters: _i1.testObjectToJson({'workoutSet': workoutSet}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<_i9.WorkoutSet>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
+  _i3.Future<void> deleteSet(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int setId,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'workout',
+            method: 'deleteSet',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'workout',
+          methodName: 'deleteSet',
+          parameters: _i1.testObjectToJson({'setId': setId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<void>);
         return _localReturnValue;
       } finally {
         await _localUniqueSession.close();

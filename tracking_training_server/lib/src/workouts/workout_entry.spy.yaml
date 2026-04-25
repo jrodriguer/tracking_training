@@ -1,0 +1,12 @@
+# One logged exercise inside a workout session.
+class: WorkoutEntry
+table: workout_entries
+
+fields:
+  ### Foreign key to the owning [WorkoutSession].
+  sessionId: int
+  ### Stable reference to the exercise definition.  Preserved even if the
+  ### template is later renamed or removed.
+  exerciseTemplateId: int
+  ### Snapshot of the exercise name at logging time.
+  exerciseName: String

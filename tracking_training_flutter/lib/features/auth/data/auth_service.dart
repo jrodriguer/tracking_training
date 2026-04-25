@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 class AuthSession {
   const AuthSession({required this.email, required this.signedInAt});
 
@@ -6,6 +8,10 @@ class AuthSession {
 }
 
 abstract class AuthService {
+  /// Loads any session persisted from a previous run.
+  /// Returns `null` when the user is not signed in.
+  Future<AuthSession?> loadSession();
+
   AuthSession? get currentSession;
 
   Future<AuthSession> signIn({required String email, required String password});
@@ -18,13 +24,25 @@ abstract class AuthService {
   Future<void> signOut();
 }
 
+/// Local fake implementation.  Swap [FakeAuthService] with a real provider
+/// (e.g. Firebase Auth) by replacing the [authServiceProvider] binding.
 class FakeAuthService implements AuthService {
-  FakeAuthService({AuthSession? initialSession}) : _session = initialSession;
+  static const _emailKey = 'fake_auth_email_v1';
 
   AuthSession? _session;
 
   @override
   AuthSession? get currentSession => _session;
+
+  @override
+  Future<AuthSession?> loadSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final email = prefs.getString(_emailKey);
+    if (email == null) return null;
+    final session = AuthSession(email: email, signedInAt: DateTime.now());
+    _session = session;
+    return session;
+  }
 
   @override
   Future<AuthSession> signIn({
@@ -35,8 +53,9 @@ class FakeAuthService implements AuthService {
       email: email.trim().toLowerCase(),
       signedInAt: DateTime.now(),
     );
-
     _session = session;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_emailKey, session.email);
     return session;
   }
 
@@ -51,5 +70,7 @@ class FakeAuthService implements AuthService {
   @override
   Future<void> signOut() async {
     _session = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_emailKey);
   }
 }

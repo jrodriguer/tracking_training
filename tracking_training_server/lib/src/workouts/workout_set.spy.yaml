@@ -1,0 +1,15 @@
+# Set-level reps and weight detail for a workout entry.
+class: WorkoutSet
+table: workout_sets
+
+fields:
+  ### Foreign key to the owning [WorkoutEntry].
+  entryId: int
+  ### 1-based set number within the entry.
+  setNumber: int
+  ### Repetition count for this set.
+  reps: int
+  ### Load lifted in kilograms.
+  weight: double
+  ### Optional freeform note for this set.
+  note: String?

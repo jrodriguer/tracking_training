@@ -33,13 +33,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     return null;
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    final ok = ref.read(authControllerProvider.notifier).register(
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-    );
-    if (ok && mounted) context.go('/routines');
+    await ref
+        .read(authControllerProvider.notifier)
+        .register(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+    // Router redirects automatically when AuthState transitions to SignedIn.
   }
 
   @override
@@ -80,8 +82,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               ? Icons.visibility_off
                               : Icons.visibility,
                         ),
-                        onPressed: () =>
-                            setState(() => _obscurePassword = !_obscurePassword),
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                       ),
                     ),
                     obscureText: _obscurePassword,

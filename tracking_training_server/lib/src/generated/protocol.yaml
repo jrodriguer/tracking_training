@@ -9,5 +9,21 @@ emailIdp:
   - hasAccount:
 jwtRefresh:
   - refreshAccessToken:
-greeting:
-  - hello:
+routine:
+  - getRoutineDays:
+  - updateRoutineDay:
+  - getExercises:
+  - addExercise:
+  - updateExercise:
+  - removeExercise:
+  - reorderExercises:
+workout:
+  - listSessions:
+  - getSession:
+  - createSessionFromRoutineDay:
+  - updateSessionMetadata:
+  - deleteSession:
+  - getEntries:
+  - getSets:
+  - saveSet:
+  - deleteSet:

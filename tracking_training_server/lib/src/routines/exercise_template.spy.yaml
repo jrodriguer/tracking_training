@@ -1,0 +1,17 @@
+# Exercise definition attached to a routine day.
+class: ExerciseTemplate
+table: exercise_templates
+
+fields:
+  ### Foreign key to the owning [RoutineDay].
+  routineDayId: int
+  ### Display name of the exercise.
+  name: String
+  ### Optional coaching note or cue shown during logging.
+  note: String?
+  ### Position within the day's exercise list, starting at 0.
+  sortOrder: int
+  ### When this record was first created.
+  createdAt: DateTime
+  ### When this record was last modified.
+  updatedAt: DateTime
