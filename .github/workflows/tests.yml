@@ -19,7 +19,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.32.8'
+          flutter-version: '3.35.0' # or any stable version that includes Dart >=3.9.0
 
       - name: Start containers
         working-directory: tracking_training_server
