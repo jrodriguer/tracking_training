@@ -1,4 +1,4 @@
-description: 'Automated PR workflow: commits local changes and updates PR progress with report_progress.'
+description: 'Automated PR workflow: creates branch, commits with proper message, pushes, opens PR, merges, cleans up. Follows project commit and PR rules.'
 model: GPT-5 mini
 ---
 
@@ -6,15 +6,18 @@ model: GPT-5 mini
 
 Execute the following workflow using GitHub's MCP:
 
-1. Confirm there are local changes and gather validation evidence for them.
-2. Prepare a concise commit message that summarizes the change.
-3. Use `report_progress` to:
-   - stage and commit all local changes
-   - push updates to the current PR branch
-   - update the PR description with a markdown checklist showing progress and
-     remaining work (for example, `- [x] done` and `- [ ] pending`)
-4. Keep the PR open for human review. Do **not** merge, close, or delete branches.
-5. Return a concise summary with what was committed and what remains pending.
+1. Create a new branch with a simple, descriptive name related to the uncommitted changes and check it out.
+2. Add all changed files.
+3. Commit the changes, following the commit message rules:
+   - Start with a summary title
+   - Use a bulleted list of changes (with emojis)
+   - Reference file names and specific modifications
+4. Push the branch to the remote repository.
+5. Create a Pull Request (PR) with that branch.
+6. Merge the PR (if any conflict is found, the process will stop and you will be notified).
+7. Delete the branch from both remote and local repositories.
+8. Check out the main branch again and pull the latest changes.
+9. Show closed PR link
 
 This workflow ensures consistent, clear, and traceable contributions.
-Don't ask for GitHub repo (owner/repo) or branch name; use the current repository and active PR branch context.
+Don't ask for GitHub repo (owner/repo) or branch name; just generate them based on the changes and project context.
