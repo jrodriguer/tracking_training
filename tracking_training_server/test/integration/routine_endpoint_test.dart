@@ -6,7 +6,7 @@ import 'test_tools/serverpod_test_tools.dart';
 
 /// A stable UUID used as the owner for all test data in this file.
 final _testUserId = UuidValue.fromString(
-  '00000000-0000-0000-0000-000000000001',
+  '00000000-0000-4000-8000-000000000001',
 );
 
 void main() {
