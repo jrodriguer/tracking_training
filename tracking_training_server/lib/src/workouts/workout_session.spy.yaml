@@ -3,6 +3,8 @@ class: WorkoutSession
 table: workout_sessions
 
 fields:
+  ### Auth user that owns this session.
+  userId: UuidValue
   ### The routine day this session was started from.
   routineDayId: int
   ### Snapshot of the routine day title at the time the session was created.

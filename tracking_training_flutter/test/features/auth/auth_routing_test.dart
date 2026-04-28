@@ -166,10 +166,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('New account'), findsOneWidget);
-      expect(find.text('Confirm password'), findsOneWidget);
+      // Step 1 only asks for email.
+      expect(find.text('Email'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
     });
 
-    testWidgets('mismatched confirm password shows validation error', (
+    testWidgets('submitting empty email on register shows validation error', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -177,29 +179,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Navigate to register.
       await tester.tap(find.text('Create account'));
       await tester.pumpAndSettle();
 
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Email'),
-        'new@example.com',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Password'),
-        'pass123',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Confirm password'),
-        'different',
-      );
-      await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await tester.pump();
 
-      expect(find.text('Passwords do not match.'), findsOneWidget);
+      expect(find.text('Email is required.'), findsOneWidget);
     });
 
-    testWidgets('valid registration navigates to routines page', (
+    testWidgets('valid email on register (fake auth) navigates to routines', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -215,15 +204,7 @@ void main() {
         find.widgetWithText(TextFormField, 'Email'),
         'new@example.com',
       );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Password'),
-        'pass123',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Confirm password'),
-        'pass123',
-      );
-      await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
       await tester.pumpAndSettle();
 
       expect(find.text('Routines'), findsWidgets);

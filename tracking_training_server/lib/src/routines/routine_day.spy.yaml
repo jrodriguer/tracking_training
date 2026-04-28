@@ -3,6 +3,8 @@ class: RoutineDay
 table: routine_days
 
 fields:
+  ### Auth user that owns this routine day.
+  userId: UuidValue
   ### Display title (e.g. "Day 1" or a user-chosen name).
   title: String
   ### Position in the weekly split, starting at 0.

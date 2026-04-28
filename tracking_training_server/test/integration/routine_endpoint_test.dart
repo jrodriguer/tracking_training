@@ -1,7 +1,13 @@
+import 'package:serverpod/serverpod.dart';
 import 'package:test/test.dart';
 
 import 'package:tracking_training_server/src/generated/protocol.dart';
 import 'test_tools/serverpod_test_tools.dart';
+
+/// A stable UUID used as the owner for all test data in this file.
+final _testUserId = UuidValue.fromString(
+  '00000000-0000-0000-0000-000000000001',
+);
 
 void main() {
   // ── Empty-state tests ────────────────────────────────────────────────────
@@ -10,8 +16,19 @@ void main() {
     sessionBuilder,
     endpoints,
   ) {
+    late TestSessionBuilder authedSession;
+
+    setUp(() {
+      authedSession = sessionBuilder.copyWith(
+        authentication: AuthenticationOverride.authenticationInfo(
+          _testUserId.toString(),
+          <Scope>{},
+        ),
+      );
+    });
+
     test('getRoutineDays returns empty list', () async {
-      final days = await endpoints.routine.getRoutineDays(sessionBuilder);
+      final days = await endpoints.routine.getRoutineDays(authedSession);
       expect(days, isEmpty);
     });
   });
@@ -23,12 +40,20 @@ void main() {
     endpoints,
   ) {
     late RoutineDay testDay;
+    late TestSessionBuilder authedSession;
 
     setUp(() async {
+      authedSession = sessionBuilder.copyWith(
+        authentication: AuthenticationOverride.authenticationInfo(
+          _testUserId.toString(),
+          <Scope>{},
+        ),
+      );
       final session = sessionBuilder.build();
       testDay = await RoutineDay.db.insertRow(
         session,
         RoutineDay(
+          userId: _testUserId,
           title: 'Push Day',
           sortOrder: 0,
           focusAreas: ['Chest', 'Shoulders'],
@@ -40,7 +65,7 @@ void main() {
 
     group('getRoutineDays', () {
       test('returns the seeded day', () async {
-        final days = await endpoints.routine.getRoutineDays(sessionBuilder);
+        final days = await endpoints.routine.getRoutineDays(authedSession);
         expect(days.length, 1);
         expect(days.first.title, 'Push Day');
         expect(days.first.focusAreas, ['Chest', 'Shoulders']);
@@ -51,6 +76,7 @@ void main() {
         await RoutineDay.db.insertRow(
           session,
           RoutineDay(
+            userId: _testUserId,
             title: 'Pull Day',
             sortOrder: 2,
             focusAreas: ['Back'],
@@ -61,6 +87,7 @@ void main() {
         await RoutineDay.db.insertRow(
           session,
           RoutineDay(
+            userId: _testUserId,
             title: 'Leg Day',
             sortOrder: 1,
             focusAreas: ['Quads'],
@@ -69,7 +96,7 @@ void main() {
           ),
         );
 
-        final days = await endpoints.routine.getRoutineDays(sessionBuilder);
+        final days = await endpoints.routine.getRoutineDays(authedSession);
 
         expect(days.length, 3);
         expect(days[0].sortOrder, 0);
@@ -81,13 +108,13 @@ void main() {
     group('updateRoutineDay', () {
       test('updates title and focusAreas', () async {
         await endpoints.routine.updateRoutineDay(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
           title: 'Chest & Tris',
           focusAreas: ['Chest', 'Triceps'],
         );
 
-        final days = await endpoints.routine.getRoutineDays(sessionBuilder);
+        final days = await endpoints.routine.getRoutineDays(authedSession);
         final updated = days.first;
         expect(updated.title, 'Chest & Tris');
         expect(updated.focusAreas, ['Chest', 'Triceps']);
@@ -96,7 +123,7 @@ void main() {
       test('throws when dayId does not exist', () async {
         expect(
           () => endpoints.routine.updateRoutineDay(
-            sessionBuilder,
+            authedSession,
             dayId: 999999,
             title: 'Ghost',
             focusAreas: [],
@@ -109,7 +136,7 @@ void main() {
     group('addExercise', () {
       test('inserts exercise and returns it with an id', () async {
         final exercise = await endpoints.routine.addExercise(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
           name: 'Bench Press',
         );
@@ -123,12 +150,12 @@ void main() {
 
       test('assigns ascending sortOrder for subsequent exercises', () async {
         await endpoints.routine.addExercise(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
           name: 'Bench Press',
         );
         final second = await endpoints.routine.addExercise(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
           name: 'Overhead Press',
         );
@@ -138,7 +165,7 @@ void main() {
 
       test('stores optional note', () async {
         final exercise = await endpoints.routine.addExercise(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
           name: 'Squat',
           note: 'Keep chest up',
@@ -151,18 +178,18 @@ void main() {
     group('getExercises', () {
       test('returns exercises ordered by sortOrder', () async {
         await endpoints.routine.addExercise(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
           name: 'First',
         );
         await endpoints.routine.addExercise(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
           name: 'Second',
         );
 
         final exercises = await endpoints.routine.getExercises(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
         );
 
@@ -173,7 +200,7 @@ void main() {
 
       test('returns empty list when day has no exercises', () async {
         final exercises = await endpoints.routine.getExercises(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
         );
 
@@ -186,7 +213,7 @@ void main() {
 
       setUp(() async {
         exercise = await endpoints.routine.addExercise(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
           name: 'Dumbbell Row',
         );
@@ -194,13 +221,13 @@ void main() {
 
       test('updates name', () async {
         await endpoints.routine.updateExercise(
-          sessionBuilder,
+          authedSession,
           exerciseId: exercise.id!,
           name: 'Cable Row',
         );
 
         final exercises = await endpoints.routine.getExercises(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
         );
         expect(exercises.first.name, 'Cable Row');
@@ -208,14 +235,14 @@ void main() {
 
       test('updates optional note', () async {
         await endpoints.routine.updateExercise(
-          sessionBuilder,
+          authedSession,
           exerciseId: exercise.id!,
           name: 'Dumbbell Row',
           note: 'Neutral grip',
         );
 
         final exercises = await endpoints.routine.getExercises(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
         );
         expect(exercises.first.note, 'Neutral grip');
@@ -224,7 +251,7 @@ void main() {
       test('throws when exerciseId does not exist', () async {
         expect(
           () => endpoints.routine.updateExercise(
-            sessionBuilder,
+            authedSession,
             exerciseId: 999999,
             name: 'Ghost',
           ),
@@ -236,18 +263,18 @@ void main() {
     group('removeExercise', () {
       test('removes the exercise from the list', () async {
         final exercise = await endpoints.routine.addExercise(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
           name: 'To Remove',
         );
 
         await endpoints.routine.removeExercise(
-          sessionBuilder,
+          authedSession,
           exerciseId: exercise.id!,
         );
 
         final exercises = await endpoints.routine.getExercises(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
         );
         expect(exercises, isEmpty);
@@ -256,7 +283,7 @@ void main() {
       test('throws when exerciseId does not exist', () async {
         expect(
           () => endpoints.routine.removeExercise(
-            sessionBuilder,
+            authedSession,
             exerciseId: 999999,
           ),
           throwsA(anything),
@@ -267,30 +294,30 @@ void main() {
     group('reorderExercises', () {
       test('assigns sortOrder matching the provided order', () async {
         final a = await endpoints.routine.addExercise(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
           name: 'A',
         );
         final b = await endpoints.routine.addExercise(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
           name: 'B',
         );
         final c = await endpoints.routine.addExercise(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
           name: 'C',
         );
 
         // Reverse the order.
         await endpoints.routine.reorderExercises(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
           exerciseIdsInOrder: [c.id!, b.id!, a.id!],
         );
 
         final exercises = await endpoints.routine.getExercises(
-          sessionBuilder,
+          authedSession,
           dayId: testDay.id!,
         );
         expect(exercises[0].name, 'C');

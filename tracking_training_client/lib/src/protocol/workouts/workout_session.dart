@@ -15,6 +15,7 @@ import 'package:serverpod_client/serverpod_client.dart' as _i1;
 abstract class WorkoutSession implements _i1.SerializableModel {
   WorkoutSession._({
     this.id,
+    required this.userId,
     required this.routineDayId,
     required this.routineDayTitle,
     required this.startedAt,
@@ -24,6 +25,7 @@ abstract class WorkoutSession implements _i1.SerializableModel {
 
   factory WorkoutSession({
     int? id,
+    required _i1.UuidValue userId,
     required int routineDayId,
     required String routineDayTitle,
     required DateTime startedAt,
@@ -34,6 +36,7 @@ abstract class WorkoutSession implements _i1.SerializableModel {
   factory WorkoutSession.fromJson(Map<String, dynamic> jsonSerialization) {
     return WorkoutSession(
       id: jsonSerialization['id'] as int?,
+      userId: _i1.UuidValueJsonExtension.fromJson(jsonSerialization['userId']),
       routineDayId: jsonSerialization['routineDayId'] as int,
       routineDayTitle: jsonSerialization['routineDayTitle'] as String,
       startedAt: _i1.DateTimeJsonExtension.fromJson(
@@ -52,6 +55,9 @@ abstract class WorkoutSession implements _i1.SerializableModel {
   /// database or if it has been fetched from the database. Otherwise,
   /// the id will be null.
   int? id;
+
+  /// Auth user that owns this session.
+  _i1.UuidValue userId;
 
   /// The routine day this session was started from.
   int routineDayId;
@@ -74,6 +80,7 @@ abstract class WorkoutSession implements _i1.SerializableModel {
   @_i1.useResult
   WorkoutSession copyWith({
     int? id,
+    _i1.UuidValue? userId,
     int? routineDayId,
     String? routineDayTitle,
     DateTime? startedAt,
@@ -85,6 +92,7 @@ abstract class WorkoutSession implements _i1.SerializableModel {
     return {
       '__className__': 'WorkoutSession',
       if (id != null) 'id': id,
+      'userId': userId.toJson(),
       'routineDayId': routineDayId,
       'routineDayTitle': routineDayTitle,
       'startedAt': startedAt.toJson(),
@@ -104,6 +112,7 @@ class _Undefined {}
 class _WorkoutSessionImpl extends WorkoutSession {
   _WorkoutSessionImpl({
     int? id,
+    required _i1.UuidValue userId,
     required int routineDayId,
     required String routineDayTitle,
     required DateTime startedAt,
@@ -111,6 +120,7 @@ class _WorkoutSessionImpl extends WorkoutSession {
     required DateTime updatedAt,
   }) : super._(
          id: id,
+         userId: userId,
          routineDayId: routineDayId,
          routineDayTitle: routineDayTitle,
          startedAt: startedAt,
@@ -124,6 +134,7 @@ class _WorkoutSessionImpl extends WorkoutSession {
   @override
   WorkoutSession copyWith({
     Object? id = _Undefined,
+    _i1.UuidValue? userId,
     int? routineDayId,
     String? routineDayTitle,
     DateTime? startedAt,
@@ -132,6 +143,7 @@ class _WorkoutSessionImpl extends WorkoutSession {
   }) {
     return WorkoutSession(
       id: id is int? ? id : this.id,
+      userId: userId ?? this.userId,
       routineDayId: routineDayId ?? this.routineDayId,
       routineDayTitle: routineDayTitle ?? this.routineDayTitle,
       startedAt: startedAt ?? this.startedAt,

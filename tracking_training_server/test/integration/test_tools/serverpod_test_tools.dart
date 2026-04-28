@@ -35,10 +35,10 @@ export 'package:serverpod_test/serverpod_test_public_exports.dart';
 /// `sessionBuilder` is used to build a `Session` object that represents the server state during an endpoint call and is used to set up scenarios.
 /// `endpoints` contains all your Serverpod endpoints and lets you call them:
 /// ```dart
-/// withServerpod('Given routine endpoint', (sessionBuilder, endpoints) {
-///   test('returns routine days', () async {
-///     final days = await endpoints.routine.getRoutineDays(sessionBuilder);
-///     expect(days, isA<List<RoutineDay>>());
+/// withServerpod('Given Example endpoint', (sessionBuilder, endpoints) {
+///   test('when calling `hello` then should return greeting', () async {
+///     final greeting = await endpoints.example.hello(sessionBuilder, 'Michael');
+///     expect(greeting, 'Hello Michael');
 ///   });
 /// });
 /// ```
@@ -133,6 +133,8 @@ void withServerpod(
 }
 
 class TestEndpoints {
+  late final _AppAuthEndpoint appAuth;
+
   late final _EmailIdpEndpoint emailIdp;
 
   late final _JwtRefreshEndpoint jwtRefresh;
@@ -149,6 +151,10 @@ class _InternalTestEndpoints extends TestEndpoints
     _i2.SerializationManager serializationManager,
     _i2.EndpointDispatch endpoints,
   ) {
+    appAuth = _AppAuthEndpoint(
+      endpoints,
+      serializationManager,
+    );
     emailIdp = _EmailIdpEndpoint(
       endpoints,
       serializationManager,
@@ -165,6 +171,47 @@ class _InternalTestEndpoints extends TestEndpoints
       endpoints,
       serializationManager,
     );
+  }
+}
+
+class _AppAuthEndpoint {
+  _AppAuthEndpoint(
+    this._endpointDispatch,
+    this._serializationManager,
+  );
+
+  final _i2.EndpointDispatch _endpointDispatch;
+
+  final _i2.SerializationManager _serializationManager;
+
+  _i3.Future<bool> seedDefaultRoutine(
+    _i1.TestSessionBuilder sessionBuilder,
+  ) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'appAuth',
+            method: 'seedDefaultRoutine',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'appAuth',
+          methodName: 'seedDefaultRoutine',
+          parameters: _i1.testObjectToJson({}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<bool>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
   }
 }
 
