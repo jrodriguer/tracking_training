@@ -16,6 +16,7 @@ import 'package:tracking_training_client/src/protocol/protocol.dart' as _i2;
 abstract class RoutineDay implements _i1.SerializableModel {
   RoutineDay._({
     this.id,
+    required this.userId,
     required this.title,
     required this.sortOrder,
     required this.focusAreas,
@@ -25,6 +26,7 @@ abstract class RoutineDay implements _i1.SerializableModel {
 
   factory RoutineDay({
     int? id,
+    required _i1.UuidValue userId,
     required String title,
     required int sortOrder,
     required List<String> focusAreas,
@@ -35,6 +37,7 @@ abstract class RoutineDay implements _i1.SerializableModel {
   factory RoutineDay.fromJson(Map<String, dynamic> jsonSerialization) {
     return RoutineDay(
       id: jsonSerialization['id'] as int?,
+      userId: _i1.UuidValueJsonExtension.fromJson(jsonSerialization['userId']),
       title: jsonSerialization['title'] as String,
       sortOrder: jsonSerialization['sortOrder'] as int,
       focusAreas: _i2.Protocol().deserialize<List<String>>(
@@ -53,6 +56,9 @@ abstract class RoutineDay implements _i1.SerializableModel {
   /// database or if it has been fetched from the database. Otherwise,
   /// the id will be null.
   int? id;
+
+  /// Auth user that owns this routine day.
+  _i1.UuidValue userId;
 
   /// Display title (e.g. "Day 1" or a user-chosen name).
   String title;
@@ -74,6 +80,7 @@ abstract class RoutineDay implements _i1.SerializableModel {
   @_i1.useResult
   RoutineDay copyWith({
     int? id,
+    _i1.UuidValue? userId,
     String? title,
     int? sortOrder,
     List<String>? focusAreas,
@@ -85,6 +92,7 @@ abstract class RoutineDay implements _i1.SerializableModel {
     return {
       '__className__': 'RoutineDay',
       if (id != null) 'id': id,
+      'userId': userId.toJson(),
       'title': title,
       'sortOrder': sortOrder,
       'focusAreas': focusAreas.toJson(),
@@ -104,6 +112,7 @@ class _Undefined {}
 class _RoutineDayImpl extends RoutineDay {
   _RoutineDayImpl({
     int? id,
+    required _i1.UuidValue userId,
     required String title,
     required int sortOrder,
     required List<String> focusAreas,
@@ -111,6 +120,7 @@ class _RoutineDayImpl extends RoutineDay {
     required DateTime updatedAt,
   }) : super._(
          id: id,
+         userId: userId,
          title: title,
          sortOrder: sortOrder,
          focusAreas: focusAreas,
@@ -124,6 +134,7 @@ class _RoutineDayImpl extends RoutineDay {
   @override
   RoutineDay copyWith({
     Object? id = _Undefined,
+    _i1.UuidValue? userId,
     String? title,
     int? sortOrder,
     List<String>? focusAreas,
@@ -132,6 +143,7 @@ class _RoutineDayImpl extends RoutineDay {
   }) {
     return RoutineDay(
       id: id is int? ? id : this.id,
+      userId: userId ?? this.userId,
       title: title ?? this.title,
       sortOrder: sortOrder ?? this.sortOrder,
       focusAreas: focusAreas ?? this.focusAreas.map((e0) => e0).toList(),

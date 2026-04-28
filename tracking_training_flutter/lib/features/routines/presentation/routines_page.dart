@@ -17,23 +17,30 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final days = ref.watch(routineControllerProvider);
+    final daysAsync = ref.watch(routineControllerProvider);
 
-    if (days.isEmpty) {
-      return const Center(child: Text('No routine days yet.'));
-    }
+    return daysAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) =>
+          Center(child: Text('Error loading routines: $error')),
+      data: (days) {
+        if (days.isEmpty) {
+          return const Center(child: Text('No routine days yet.'));
+        }
 
-    _selectedDayId ??= days.first.id;
+        _selectedDayId ??= days.first.id;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final breakpoint = breakpointForWidth(constraints.maxWidth);
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final breakpoint = breakpointForWidth(constraints.maxWidth);
 
-        return switch (breakpoint) {
-          AppBreakpoint.phone => _buildPhoneList(context, days),
-          AppBreakpoint.tablet ||
-          AppBreakpoint.desktop => _buildWideLayout(context, days),
-        };
+            return switch (breakpoint) {
+              AppBreakpoint.phone => _buildPhoneList(context, days),
+              AppBreakpoint.tablet ||
+              AppBreakpoint.desktop => _buildWideLayout(context, days),
+            };
+          },
+        );
       },
     );
   }

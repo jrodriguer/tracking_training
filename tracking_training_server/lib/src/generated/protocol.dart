@@ -127,6 +127,12 @@ class Protocol extends _i1.SerializationManagerServer {
           columnDefault: 'nextval(\'routine_days_id_seq\'::regclass)',
         ),
         _i2.ColumnDefinition(
+          name: 'userId',
+          columnType: _i2.ColumnType.uuid,
+          isNullable: false,
+          dartType: 'UuidValue',
+        ),
+        _i2.ColumnDefinition(
           name: 'title',
           columnType: _i2.ColumnType.text,
           isNullable: false,
@@ -237,6 +243,12 @@ class Protocol extends _i1.SerializationManagerServer {
           isNullable: false,
           dartType: 'int?',
           columnDefault: 'nextval(\'workout_sessions_id_seq\'::regclass)',
+        ),
+        _i2.ColumnDefinition(
+          name: 'userId',
+          columnType: _i2.ColumnType.uuid,
+          isNullable: false,
+          dartType: 'UuidValue',
         ),
         _i2.ColumnDefinition(
           name: 'routineDayId',

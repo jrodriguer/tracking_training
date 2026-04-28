@@ -2,7 +2,7 @@
 name: review
 description: Review code changes for bugs, regressions, repo-rule violations,
   and missing validation.
-model: ['Claude Opus 4.6 (copilot)', 'GPT-5.4 (copilot)']
+model: ['GPT-5.4 (copilot)']
 tools: ['agent', 'read', 'search']
 ---
 

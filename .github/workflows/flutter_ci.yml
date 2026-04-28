@@ -21,15 +21,13 @@ jobs:
           channel: stable
 
       - name: Install dependencies
+        working-directory: tracking_training_flutter
         run: flutter pub get
 
       - name: Analyze
+        working-directory: tracking_training_flutter
         run: flutter analyze
 
       - name: Test
-        run: |
-          if [ -d test ]; then
-            flutter test
-          else
-            echo "No test directory found. Skipping tests."
-          fi
+        working-directory: tracking_training_flutter
+        run: flutter test

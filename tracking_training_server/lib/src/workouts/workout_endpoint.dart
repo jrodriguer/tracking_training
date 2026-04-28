@@ -1,6 +1,7 @@
 import 'package:serverpod/serverpod.dart';
 
 import '../generated/protocol.dart';
+import '../auth/require_auth.dart';
 
 // After modifying this file run `serverpod generate` from the server package
 // directory to regenerate the client and endpoint dispatcher.
@@ -10,12 +11,16 @@ import '../generated/protocol.dart';
 /// Session data is stored independently of routine templates so that editing
 /// or removing a routine day never mutates historical workout records.
 class WorkoutEndpoint extends Endpoint {
+  @override
+  bool get requireLogin => true;
   // ── Sessions ──────────────────────────────────────────────────────────────
 
   /// Returns all sessions ordered newest first.
   Future<List<WorkoutSession>> listSessions(Session session) async {
+    final userId = await requireUserId(session);
     return WorkoutSession.db.find(
       session,
+      where: (t) => t.userId.equals(userId),
       orderBy: (t) => t.startedAt,
       orderDescending: true,
     );
@@ -26,7 +31,10 @@ class WorkoutEndpoint extends Endpoint {
     Session session, {
     required int sessionId,
   }) async {
-    return WorkoutSession.db.findById(session, sessionId);
+    final userId = await requireUserId(session);
+    final target = await WorkoutSession.db.findById(session, sessionId);
+    if (target == null || target.userId != userId) return null;
+    return target;
   }
 
   /// Creates a new workout session from a routine day.
@@ -39,8 +47,11 @@ class WorkoutEndpoint extends Endpoint {
     required int routineDayId,
     required DateTime workoutDate,
   }) async {
+    final userId = await requireUserId(session);
     final day = await RoutineDay.db.findById(session, routineDayId);
-    if (day == null) throw Exception('RoutineDay $routineDayId not found.');
+    if (day == null || day.userId != userId) {
+      throw Exception('Not authorized');
+    }
 
     final exercises = await ExerciseTemplate.db.find(
       session,
@@ -52,6 +63,7 @@ class WorkoutEndpoint extends Endpoint {
     final newSession = await WorkoutSession.db.insertRow(
       session,
       WorkoutSession(
+        userId: userId,
         routineDayId: routineDayId,
         routineDayTitle: day.title,
         startedAt: workoutDate,
@@ -91,11 +103,17 @@ class WorkoutEndpoint extends Endpoint {
     Session session, {
     required WorkoutSession workoutSession,
   }) async {
+    final userId = await requireUserId(session);
     final id = workoutSession.id;
     if (id == null) {
-      await WorkoutSession.db.insertRow(session, workoutSession);
+      await WorkoutSession.db.insertRow(
+        session,
+        workoutSession.copyWith(userId: userId),
+      );
       return;
     }
+    final existing = await WorkoutSession.db.findById(session, id);
+    if (existing == null || existing.userId != userId) return;
     await WorkoutSession.db.updateRow(
       session,
       workoutSession.copyWith(updatedAt: DateTime.now()),
@@ -107,6 +125,9 @@ class WorkoutEndpoint extends Endpoint {
     Session session, {
     required int sessionId,
   }) async {
+    final userId = await requireUserId(session);
+    final target = await WorkoutSession.db.findById(session, sessionId);
+    if (target == null || target.userId != userId) return;
     // Delete sets first (child of entries).
     final entries = await WorkoutEntry.db.find(
       session,
@@ -123,9 +144,8 @@ class WorkoutEndpoint extends Endpoint {
       session,
       where: (t) => t.sessionId.equals(sessionId),
     );
-    // Delete session.
-    final s = await WorkoutSession.db.findById(session, sessionId);
-    if (s != null) await WorkoutSession.db.deleteRow(session, s);
+    // Delete session row.
+    await WorkoutSession.db.deleteRow(session, target);
   }
 
   // ── Entries ───────────────────────────────────────────────────────────────
@@ -135,6 +155,11 @@ class WorkoutEndpoint extends Endpoint {
     Session session, {
     required int sessionId,
   }) async {
+    final userId = await requireUserId(session);
+    final parentSession = await WorkoutSession.db.findById(session, sessionId);
+    if (parentSession == null || parentSession.userId != userId) {
+      throw Exception('Not authorized');
+    }
     return WorkoutEntry.db.find(
       session,
       where: (t) => t.sessionId.equals(sessionId),
@@ -148,6 +173,16 @@ class WorkoutEndpoint extends Endpoint {
     Session session, {
     required int entryId,
   }) async {
+    final userId = await requireUserId(session);
+    final entry = await WorkoutEntry.db.findById(session, entryId);
+    if (entry == null) throw Exception('Not authorized');
+    final parentSession = await WorkoutSession.db.findById(
+      session,
+      entry.sessionId,
+    );
+    if (parentSession == null || parentSession.userId != userId) {
+      throw Exception('Not authorized');
+    }
     return WorkoutSet.db.find(
       session,
       where: (t) => t.entryId.equals(entryId),
@@ -160,10 +195,37 @@ class WorkoutEndpoint extends Endpoint {
     Session session, {
     required WorkoutSet workoutSet,
   }) async {
+    final userId = await requireUserId(session);
     if (workoutSet.id == null) {
+      final parentEntry = await WorkoutEntry.db.findById(session, workoutSet.entryId);
+      if (parentEntry == null) throw Exception('Not authorized');
+      final parentSession = await WorkoutSession.db.findById(
+        session,
+        parentEntry.sessionId,
+      );
+      if (parentSession == null || parentSession.userId != userId) {
+        throw Exception('Not authorized');
+      }
       return WorkoutSet.db.insertRow(session, workoutSet);
     }
-    return WorkoutSet.db.updateRow(session, workoutSet);
+    final existingSet = await WorkoutSet.db.findById(session, workoutSet.id!);
+    if (existingSet == null) throw Exception('Not authorized');
+    final parentEntry = await WorkoutEntry.db.findById(
+      session,
+      existingSet.entryId,
+    );
+    if (parentEntry == null) throw Exception('Not authorized');
+    final parentSession = await WorkoutSession.db.findById(
+      session,
+      parentEntry.sessionId,
+    );
+    if (parentSession == null || parentSession.userId != userId) {
+      throw Exception('Not authorized');
+    }
+    return WorkoutSet.db.updateRow(
+      session,
+      workoutSet.copyWith(entryId: existingSet.entryId),
+    );
   }
 
   /// Removes a set by ID.
@@ -171,7 +233,18 @@ class WorkoutEndpoint extends Endpoint {
     Session session, {
     required int setId,
   }) async {
+    final userId = await requireUserId(session);
     final s = await WorkoutSet.db.findById(session, setId);
-    if (s != null) await WorkoutSet.db.deleteRow(session, s);
+    if (s == null) throw Exception('Not authorized');
+    final parentEntry = await WorkoutEntry.db.findById(session, s.entryId);
+    if (parentEntry == null) throw Exception('Not authorized');
+    final parentSession = await WorkoutSession.db.findById(
+      session,
+      parentEntry.sessionId,
+    );
+    if (parentSession == null || parentSession.userId != userId) {
+      throw Exception('Not authorized');
+    }
+    await WorkoutSet.db.deleteRow(session, s);
   }
 }

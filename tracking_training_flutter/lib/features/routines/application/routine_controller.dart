@@ -1,70 +1,91 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/application/auth_controller.dart';
+import '../data/routine_repository.dart';
 import '../domain/routine_models.dart';
 
+/// Default repository – returns the hard-coded seed routine so that all tests
+/// work without overrides.  Production code overrides this with
+/// [ServerpodRoutineRepository] in `main.dart`.
+final routineRepositoryProvider = Provider<RoutineRepository>(
+  (ref) => const FakeRoutineRepository(),
+);
+
 final routineControllerProvider =
-    NotifierProvider<RoutineController, List<RoutineDay>>(
+    AsyncNotifierProvider<RoutineController, List<RoutineDay>>(
       RoutineController.new,
     );
 
 final routineDayByIdProvider = Provider.family<RoutineDay?, String>((ref, id) {
-  final days = ref.watch(routineControllerProvider);
-
+  final days = ref.watch(routineControllerProvider).value ?? const [];
   for (final day in days) {
-    if (day.id == id) {
-      return day;
-    }
+    if (day.id == id) return day;
   }
-
   return null;
 });
 
-class RoutineController extends Notifier<List<RoutineDay>> {
-  @override
-  List<RoutineDay> build() => _seedRoutine;
+class RoutineController extends AsyncNotifier<List<RoutineDay>> {
+  RoutineRepository get _repository => ref.read(routineRepositoryProvider);
 
-  void updateDayMetadata({
+  @override
+  Future<List<RoutineDay>> build() async {
+    final authState = ref.watch(authControllerProvider);
+    if (authState is! SignedIn) return const [];
+    return _repository.getRoutineDays();
+  }
+
+  Future<void> updateDayMetadata({
     required String dayId,
     required String title,
     required List<String> focusAreas,
-  }) {
-    state = [
-      for (final day in state)
+  }) async {
+    await _repository.updateDayMetadata(
+      dayId: dayId,
+      title: title,
+      focusAreas: focusAreas,
+    );
+    state = AsyncData([
+      for (final day in state.requireValue)
         if (day.id == dayId)
           day.copyWith(title: title, focusAreas: focusAreas)
         else
           day,
-    ];
+    ]);
   }
 
-  void addExercise({
+  Future<void> addExercise({
     required String dayId,
     required String name,
     String? note,
-  }) {
-    final newExercise = ExerciseTemplate(
-      id: _buildId('exercise'),
+  }) async {
+    final newExercise = await _repository.addExercise(
+      dayId: dayId,
       name: name,
       note: note,
     );
-
-    state = [
-      for (final day in state)
+    state = AsyncData([
+      for (final day in state.requireValue)
         if (day.id == dayId)
           day.copyWith(exercises: [...day.exercises, newExercise])
         else
           day,
-    ];
+    ]);
   }
 
-  void updateExercise({
+  Future<void> updateExercise({
     required String dayId,
     required String exerciseId,
     required String name,
     String? note,
-  }) {
-    state = [
-      for (final day in state)
+  }) async {
+    await _repository.updateExercise(
+      dayId: dayId,
+      exerciseId: exerciseId,
+      name: name,
+      note: note,
+    );
+    state = AsyncData([
+      for (final day in state.requireValue)
         if (day.id == dayId)
           day.copyWith(
             exercises: [
@@ -77,12 +98,19 @@ class RoutineController extends Notifier<List<RoutineDay>> {
           )
         else
           day,
-    ];
+    ]);
   }
 
-  void removeExercise({required String dayId, required String exerciseId}) {
-    state = [
-      for (final day in state)
+  Future<void> removeExercise({
+    required String dayId,
+    required String exerciseId,
+  }) async {
+    await _repository.removeExercise(
+      dayId: dayId,
+      exerciseId: exerciseId,
+    );
+    state = AsyncData([
+      for (final day in state.requireValue)
         if (day.id == dayId)
           day.copyWith(
             exercises: [
@@ -92,16 +120,21 @@ class RoutineController extends Notifier<List<RoutineDay>> {
           )
         else
           day,
-    ];
+    ]);
   }
 
-  void reorderExercise({
+  Future<void> reorderExercise({
     required String dayId,
     required int oldIndex,
     required int newIndex,
-  }) {
-    state = [
-      for (final day in state)
+  }) async {
+    await _repository.reorderExercises(
+      dayId: dayId,
+      oldIndex: oldIndex,
+      newIndex: newIndex,
+    );
+    state = AsyncData([
+      for (final day in state.requireValue)
         if (day.id == dayId)
           day.copyWith(
             exercises: _reorder(
@@ -112,7 +145,7 @@ class RoutineController extends Notifier<List<RoutineDay>> {
           )
         else
           day,
-    ];
+    ]);
   }
 
   List<ExerciseTemplate> _reorder(
@@ -131,11 +164,55 @@ class RoutineController extends Notifier<List<RoutineDay>> {
     values.insert(targetIndex, moved);
     return values;
   }
+}
 
-  String _buildId(String prefix) {
+// ── Fake repository ──────────────────────────────────────────────────────────
+
+/// In-memory repository that returns the hard-coded seed routine.
+/// Used as the default so that unit and widget tests require no overrides.
+class FakeRoutineRepository implements RoutineRepository {
+  const FakeRoutineRepository();
+
+  @override
+  Future<List<RoutineDay>> getRoutineDays() async => _seedRoutine;
+
+  @override
+  Future<void> updateDayMetadata({
+    required String dayId,
+    required String title,
+    required List<String> focusAreas,
+  }) async {}
+
+  @override
+  Future<ExerciseTemplate> addExercise({
+    required String dayId,
+    required String name,
+    String? note,
+  }) async {
     final micros = DateTime.now().microsecondsSinceEpoch;
-    return '$prefix-$micros';
+    return ExerciseTemplate(id: 'exercise-$micros', name: name, note: note);
   }
+
+  @override
+  Future<void> updateExercise({
+    required String dayId,
+    required String exerciseId,
+    required String name,
+    String? note,
+  }) async {}
+
+  @override
+  Future<void> removeExercise({
+    required String dayId,
+    required String exerciseId,
+  }) async {}
+
+  @override
+  Future<void> reorderExercises({
+    required String dayId,
+    required int oldIndex,
+    required int newIndex,
+  }) async {}
 }
 
 const _seedRoutine = [

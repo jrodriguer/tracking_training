@@ -3,9 +3,19 @@
 // to update the test tools with the `workout` endpoint.
 
 import 'package:test/test.dart';
+import 'package:serverpod/serverpod.dart';
 
 import 'package:tracking_training_server/src/generated/protocol.dart';
 import 'test_tools/serverpod_test_tools.dart';
+
+/// A stable UUID used as the owner for all test data in this file.
+final _testUserId = UuidValue.fromString(
+  '00000000-0000-0000-0000-000000000001',
+);
+
+final _otherUserId = UuidValue.fromString(
+  '00000000-0000-0000-0000-000000000002',
+);
 
 void main() {
   // ── Empty-state tests ─────────────────────────────────────────────────────
@@ -36,12 +46,27 @@ void main() {
   ) {
     late RoutineDay testDay;
     late ExerciseTemplate testExercise;
+    late TestSessionBuilder authedSession;
+    late TestSessionBuilder otherAuthedSession;
 
     setUp(() async {
+      authedSession = sessionBuilder.copyWith(
+        authentication: AuthenticationOverride.authenticationInfo(
+          _testUserId.toString(),
+          <Scope>{},
+        ),
+      );
+      otherAuthedSession = sessionBuilder.copyWith(
+        authentication: AuthenticationOverride.authenticationInfo(
+          _otherUserId.toString(),
+          <Scope>{},
+        ),
+      );
       final session = sessionBuilder.build();
       testDay = await RoutineDay.db.insertRow(
         session,
         RoutineDay(
+          userId: _testUserId,
           title: 'Push Day',
           sortOrder: 0,
           focusAreas: ['Chest'],
@@ -65,7 +90,7 @@ void main() {
       test('returns a WorkoutSession with the day title snapshot', () async {
         final workoutSession = await endpoints.workout
             .createSessionFromRoutineDay(
-              sessionBuilder,
+              authedSession,
               routineDayId: testDay.id!,
               workoutDate: DateTime(2026, 4, 25),
             );
@@ -78,13 +103,13 @@ void main() {
       test('creates one entry per exercise', () async {
         final workoutSession = await endpoints.workout
             .createSessionFromRoutineDay(
-              sessionBuilder,
+              authedSession,
               routineDayId: testDay.id!,
               workoutDate: DateTime(2026, 4, 25),
             );
 
         final entries = await endpoints.workout.getEntries(
-          sessionBuilder,
+          authedSession,
           sessionId: workoutSession.id!,
         );
 
@@ -96,17 +121,17 @@ void main() {
       test('creates one default set per entry', () async {
         final workoutSession = await endpoints.workout
             .createSessionFromRoutineDay(
-              sessionBuilder,
+              authedSession,
               routineDayId: testDay.id!,
               workoutDate: DateTime(2026, 4, 25),
             );
 
         final entries = await endpoints.workout.getEntries(
-          sessionBuilder,
+          authedSession,
           sessionId: workoutSession.id!,
         );
         final sets = await endpoints.workout.getSets(
-          sessionBuilder,
+          authedSession,
           entryId: entries.first.id!,
         );
 
@@ -119,7 +144,7 @@ void main() {
       test('throws when routineDayId does not exist', () async {
         expect(
           () => endpoints.workout.createSessionFromRoutineDay(
-            sessionBuilder,
+            authedSession,
             routineDayId: 999999,
             workoutDate: DateTime(2026, 4, 25),
           ),
@@ -135,6 +160,7 @@ void main() {
         await WorkoutSession.db.insertRow(
           session,
           WorkoutSession(
+            userId: _testUserId,
             routineDayId: testDay.id!,
             routineDayTitle: 'Push Day',
             startedAt: now.subtract(const Duration(days: 2)),
@@ -145,6 +171,7 @@ void main() {
         await WorkoutSession.db.insertRow(
           session,
           WorkoutSession(
+            userId: _testUserId,
             routineDayId: testDay.id!,
             routineDayTitle: 'Push Day',
             startedAt: now,
@@ -153,7 +180,7 @@ void main() {
           ),
         );
 
-        final sessions = await endpoints.workout.listSessions(sessionBuilder);
+        final sessions = await endpoints.workout.listSessions(authedSession);
 
         expect(sessions.length, 2);
         expect(
@@ -167,18 +194,34 @@ void main() {
       test('returns session by id', () async {
         final workoutSession = await endpoints.workout
             .createSessionFromRoutineDay(
-              sessionBuilder,
+              authedSession,
               routineDayId: testDay.id!,
               workoutDate: DateTime(2026, 4, 25),
             );
 
         final fetched = await endpoints.workout.getSession(
-          sessionBuilder,
+          authedSession,
           sessionId: workoutSession.id!,
         );
 
         expect(fetched, isNotNull);
         expect(fetched!.id, workoutSession.id);
+      });
+
+      test('does not return another user\'s session', () async {
+        final workoutSession = await endpoints.workout
+            .createSessionFromRoutineDay(
+              authedSession,
+              routineDayId: testDay.id!,
+              workoutDate: DateTime(2026, 4, 25),
+            );
+
+        final fetched = await endpoints.workout.getSession(
+          otherAuthedSession,
+          sessionId: workoutSession.id!,
+        );
+
+        expect(fetched, isNull);
       });
     });
 
@@ -186,19 +229,19 @@ void main() {
       test('updates startedAt on the session row', () async {
         final workoutSession = await endpoints.workout
             .createSessionFromRoutineDay(
-              sessionBuilder,
+              authedSession,
               routineDayId: testDay.id!,
               workoutDate: DateTime(2026, 4, 25),
             );
         final newDate = DateTime(2026, 4, 20);
 
         await endpoints.workout.updateSessionMetadata(
-          sessionBuilder,
+          authedSession,
           workoutSession: workoutSession.copyWith(startedAt: newDate),
         );
 
         final updated = await endpoints.workout.getSession(
-          sessionBuilder,
+          authedSession,
           sessionId: workoutSession.id!,
         );
         expect(updated!.startedAt.toUtc(), newDate.toUtc());
@@ -211,12 +254,12 @@ void main() {
 
       setUp(() async {
         workoutSession = await endpoints.workout.createSessionFromRoutineDay(
-          sessionBuilder,
+          authedSession,
           routineDayId: testDay.id!,
           workoutDate: DateTime(2026, 4, 25),
         );
         final entries = await endpoints.workout.getEntries(
-          sessionBuilder,
+          authedSession,
           sessionId: workoutSession.id!,
         );
         entry = entries.first;
@@ -224,7 +267,7 @@ void main() {
 
       test('creates a new set when id is null', () async {
         final created = await endpoints.workout.saveSet(
-          sessionBuilder,
+          authedSession,
           workoutSet: WorkoutSet(
             entryId: entry.id!,
             setNumber: 2,
@@ -240,18 +283,18 @@ void main() {
 
       test('updates an existing set', () async {
         final sets = await endpoints.workout.getSets(
-          sessionBuilder,
+          authedSession,
           entryId: entry.id!,
         );
         final existingSet = sets.first;
 
         await endpoints.workout.saveSet(
-          sessionBuilder,
+          authedSession,
           workoutSet: existingSet.copyWith(reps: 12, weight: 60.0),
         );
 
         final updatedSets = await endpoints.workout.getSets(
-          sessionBuilder,
+          authedSession,
           entryId: entry.id!,
         );
         final updated = updatedSets.firstWhere((s) => s.id == existingSet.id);
@@ -264,29 +307,60 @@ void main() {
       test('removes the set', () async {
         final workoutSession = await endpoints.workout
             .createSessionFromRoutineDay(
-              sessionBuilder,
+              authedSession,
               routineDayId: testDay.id!,
               workoutDate: DateTime(2026, 4, 25),
             );
         final entries = await endpoints.workout.getEntries(
-          sessionBuilder,
+          authedSession,
           sessionId: workoutSession.id!,
         );
         final sets = await endpoints.workout.getSets(
-          sessionBuilder,
+          authedSession,
           entryId: entries.first.id!,
         );
 
         await endpoints.workout.deleteSet(
-          sessionBuilder,
+          authedSession,
           setId: sets.first.id!,
         );
 
         final remaining = await endpoints.workout.getSets(
-          sessionBuilder,
+          authedSession,
           entryId: entries.first.id!,
         );
         expect(remaining, isEmpty);
+      });
+
+      test('rejects deleting another user\'s set', () async {
+        final workoutSession = await endpoints.workout
+            .createSessionFromRoutineDay(
+              authedSession,
+              routineDayId: testDay.id!,
+              workoutDate: DateTime(2026, 4, 25),
+            );
+        final entries = await endpoints.workout.getEntries(
+          authedSession,
+          sessionId: workoutSession.id!,
+        );
+        final sets = await endpoints.workout.getSets(
+          authedSession,
+          entryId: entries.first.id!,
+        );
+
+        await expectLater(
+          () => endpoints.workout.deleteSet(
+            otherAuthedSession,
+            setId: sets.first.id!,
+          ),
+          throwsA(anything),
+        );
+
+        final ownerSets = await endpoints.workout.getSets(
+          authedSession,
+          entryId: entries.first.id!,
+        );
+        expect(ownerSets.length, 1);
       });
     });
 
@@ -294,28 +368,30 @@ void main() {
       test('removes session, entries, and sets', () async {
         final workoutSession = await endpoints.workout
             .createSessionFromRoutineDay(
-              sessionBuilder,
+              authedSession,
               routineDayId: testDay.id!,
               workoutDate: DateTime(2026, 4, 25),
             );
         final sessionId = workoutSession.id!;
 
         await endpoints.workout.deleteSession(
-          sessionBuilder,
+          authedSession,
           sessionId: sessionId,
         );
 
         final fetched = await endpoints.workout.getSession(
-          sessionBuilder,
+          authedSession,
           sessionId: sessionId,
         );
         expect(fetched, isNull);
 
-        final entries = await endpoints.workout.getEntries(
-          sessionBuilder,
-          sessionId: sessionId,
+        await expectLater(
+          () => endpoints.workout.getEntries(
+            authedSession,
+            sessionId: sessionId,
+          ),
+          throwsA(anything),
         );
-        expect(entries, isEmpty);
       });
     });
   });

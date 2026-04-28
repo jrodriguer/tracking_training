@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -14,18 +14,21 @@ GoRouter buildRouter(Ref ref) {
   final notifier = _RouterNotifier(ref);
   ref.onDispose(notifier.dispose);
   return GoRouter(
-    initialLocation: '/routines',
+    initialLocation: '/splash',
     refreshListenable: notifier,
     redirect: (context, state) {
       final authState = ref.read(authControllerProvider);
-      final isSignedIn = authState is SignedIn;
+      final isOnSplash = state.uri.path == '/splash';
       final isOnAuthRoute = state.uri.path.startsWith('/auth/');
 
-      if (!isSignedIn && !isOnAuthRoute) return '/auth/login';
-      if (isSignedIn && isOnAuthRoute) return '/routines';
-      return null;
+      return switch (authState) {
+        AuthRestoring() => isOnSplash ? null : '/splash',
+        SignedOut() => isOnAuthRoute ? null : '/auth/login',
+        SignedIn() => (isOnAuthRoute || isOnSplash) ? '/routines' : null,
+      };
     },
     routes: [
+      GoRoute(path: '/splash', builder: (_, _) => const _SplashPage()),
       GoRoute(path: '/', redirect: (_, _) => '/routines'),
       GoRoute(
         path: '/routines',
@@ -58,6 +61,17 @@ GoRouter buildRouter(Ref ref) {
       GoRoute(path: '/auth/register', builder: (_, _) => const RegisterPage()),
     ],
   );
+}
+
+class _SplashPage extends StatelessWidget {
+  const _SplashPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
 }
 
 Page<void> _shellPage(

@@ -24,7 +24,8 @@ class _WorkoutsPageState extends ConsumerState<WorkoutsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final days = ref.watch(routineControllerProvider);
+    final daysValue = ref.watch(routineControllerProvider);
+    final days = daysValue.value ?? const [];
     final workoutStateValue = ref.watch(workoutControllerProvider);
 
     _selectedDayId ??= days.isNotEmpty ? days.first.id : null;

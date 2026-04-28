@@ -17,6 +17,7 @@ abstract class RoutineDay
     implements _i1.TableRow<int?>, _i1.ProtocolSerialization {
   RoutineDay._({
     this.id,
+    required this.userId,
     required this.title,
     required this.sortOrder,
     required this.focusAreas,
@@ -26,6 +27,7 @@ abstract class RoutineDay
 
   factory RoutineDay({
     int? id,
+    required _i1.UuidValue userId,
     required String title,
     required int sortOrder,
     required List<String> focusAreas,
@@ -36,6 +38,7 @@ abstract class RoutineDay
   factory RoutineDay.fromJson(Map<String, dynamic> jsonSerialization) {
     return RoutineDay(
       id: jsonSerialization['id'] as int?,
+      userId: _i1.UuidValueJsonExtension.fromJson(jsonSerialization['userId']),
       title: jsonSerialization['title'] as String,
       sortOrder: jsonSerialization['sortOrder'] as int,
       focusAreas: _i2.Protocol().deserialize<List<String>>(
@@ -56,6 +59,9 @@ abstract class RoutineDay
 
   @override
   int? id;
+
+  /// Auth user that owns this routine day.
+  _i1.UuidValue userId;
 
   /// Display title (e.g. "Day 1" or a user-chosen name).
   String title;
@@ -80,6 +86,7 @@ abstract class RoutineDay
   @_i1.useResult
   RoutineDay copyWith({
     int? id,
+    _i1.UuidValue? userId,
     String? title,
     int? sortOrder,
     List<String>? focusAreas,
@@ -91,6 +98,7 @@ abstract class RoutineDay
     return {
       '__className__': 'RoutineDay',
       if (id != null) 'id': id,
+      'userId': userId.toJson(),
       'title': title,
       'sortOrder': sortOrder,
       'focusAreas': focusAreas.toJson(),
@@ -104,6 +112,7 @@ abstract class RoutineDay
     return {
       '__className__': 'RoutineDay',
       if (id != null) 'id': id,
+      'userId': userId.toJson(),
       'title': title,
       'sortOrder': sortOrder,
       'focusAreas': focusAreas.toJson(),
@@ -147,6 +156,7 @@ class _Undefined {}
 class _RoutineDayImpl extends RoutineDay {
   _RoutineDayImpl({
     int? id,
+    required _i1.UuidValue userId,
     required String title,
     required int sortOrder,
     required List<String> focusAreas,
@@ -154,6 +164,7 @@ class _RoutineDayImpl extends RoutineDay {
     required DateTime updatedAt,
   }) : super._(
          id: id,
+         userId: userId,
          title: title,
          sortOrder: sortOrder,
          focusAreas: focusAreas,
@@ -167,6 +178,7 @@ class _RoutineDayImpl extends RoutineDay {
   @override
   RoutineDay copyWith({
     Object? id = _Undefined,
+    _i1.UuidValue? userId,
     String? title,
     int? sortOrder,
     List<String>? focusAreas,
@@ -175,6 +187,7 @@ class _RoutineDayImpl extends RoutineDay {
   }) {
     return RoutineDay(
       id: id is int? ? id : this.id,
+      userId: userId ?? this.userId,
       title: title ?? this.title,
       sortOrder: sortOrder ?? this.sortOrder,
       focusAreas: focusAreas ?? this.focusAreas.map((e0) => e0).toList(),
@@ -186,6 +199,12 @@ class _RoutineDayImpl extends RoutineDay {
 
 class RoutineDayUpdateTable extends _i1.UpdateTable<RoutineDayTable> {
   RoutineDayUpdateTable(super.table);
+
+  _i1.ColumnValue<_i1.UuidValue, _i1.UuidValue> userId(_i1.UuidValue value) =>
+      _i1.ColumnValue(
+        table.userId,
+        value,
+      );
 
   _i1.ColumnValue<String, String> title(String value) => _i1.ColumnValue(
     table.title,
@@ -219,6 +238,10 @@ class RoutineDayUpdateTable extends _i1.UpdateTable<RoutineDayTable> {
 class RoutineDayTable extends _i1.Table<int?> {
   RoutineDayTable({super.tableRelation}) : super(tableName: 'routine_days') {
     updateTable = RoutineDayUpdateTable(this);
+    userId = _i1.ColumnUuid(
+      'userId',
+      this,
+    );
     title = _i1.ColumnString(
       'title',
       this,
@@ -243,6 +266,9 @@ class RoutineDayTable extends _i1.Table<int?> {
 
   late final RoutineDayUpdateTable updateTable;
 
+  /// Auth user that owns this routine day.
+  late final _i1.ColumnUuid userId;
+
   /// Display title (e.g. "Day 1" or a user-chosen name).
   late final _i1.ColumnString title;
 
@@ -261,6 +287,7 @@ class RoutineDayTable extends _i1.Table<int?> {
   @override
   List<_i1.Column> get columns => [
     id,
+    userId,
     title,
     sortOrder,
     focusAreas,

@@ -7,6 +7,11 @@ sealed class AuthState {
   const AuthState();
 }
 
+/// The app is restoring a persisted session on startup.
+final class AuthRestoring extends AuthState {
+  const AuthRestoring();
+}
+
 /// The user is not authenticated.
 final class SignedOut extends AuthState {
   const SignedOut();
@@ -20,23 +25,25 @@ final class SignedIn extends AuthState {
 }
 
 /// Exposes the [AuthService] implementation.  Replace [FakeAuthService] here
-/// to swap in a real provider such as Firebase Auth.
+/// to swap in a real provider such as [ServerpodAuthService].
 final authServiceProvider = Provider<AuthService>((_) => FakeAuthService());
 
 final authControllerProvider = NotifierProvider<AuthController, AuthState>(
   AuthController.new,
 );
 
-/// Local auth controller.  A real provider can be swapped in by replacing
+/// Auth controller.  The service implementation can be swapped by replacing
 /// [authServiceProvider].
 class AuthController extends Notifier<AuthState> {
   @override
   AuthState build() {
-    // Kick off async session restore; initial state is SignedOut.
-    ref.read(authServiceProvider).loadSession().then((session) {
-      if (session != null) state = SignedIn(session.email);
-    });
-    return const SignedOut();
+    _restoreSession();
+    return const AuthRestoring();
+  }
+
+  Future<void> _restoreSession() async {
+    final session = await ref.read(authServiceProvider).loadSession();
+    state = session != null ? SignedIn(session.email) : const SignedOut();
   }
 
   /// Signs in with [email] and [password].
@@ -49,15 +56,12 @@ class AuthController extends Notifier<AuthState> {
     if (email.isEmpty || password.isEmpty) return false;
     final session = await ref
         .read(authServiceProvider)
-        .signIn(
-          email: email,
-          password: password,
-        );
+        .signIn(email: email, password: password);
     state = SignedIn(session.email);
     return true;
   }
 
-  /// Registers a new account with [email] and [password].
+  /// Registers a new account with [email] and [password] (single-step fake).
   ///
   /// Returns `true` on success, `false` when either field is empty.
   Future<bool> register({
@@ -67,10 +71,7 @@ class AuthController extends Notifier<AuthState> {
     if (email.isEmpty || password.isEmpty) return false;
     final session = await ref
         .read(authServiceProvider)
-        .register(
-          email: email,
-          password: password,
-        );
+        .register(email: email, password: password);
     state = SignedIn(session.email);
     return true;
   }
@@ -80,10 +81,63 @@ class AuthController extends Notifier<AuthState> {
     await ref.read(authServiceProvider).signOut();
     state = const SignedOut();
   }
+
+  // ── Multi-step registration ──────────────────────────────────────────────
+
+  /// Step 1: sends a verification email.
+  ///
+  /// Returns the account request ID UUID string (real service), or `null` when
+  /// the service completed registration inline ([FakeAuthService]).  When `null`
+  /// is returned the state has already transitioned to [SignedIn].
+  Future<String?> startRegistration(String email) async {
+    if (email.isEmpty) return null;
+    final service = ref.read(authServiceProvider);
+    final requestId = await service.startRegistration(email);
+    if (requestId == null) {
+      // Fake flow: session stored inline – load it to transition state.
+      final session = await service.loadSession();
+      if (session != null) state = SignedIn(session.email);
+    }
+    return requestId;
+  }
+
+  /// Step 2: verifies the email code and returns a registration token.
+  Future<String> verifyRegistrationCode({
+    required String accountRequestId,
+    required String verificationCode,
+  }) {
+    return ref
+        .read(authServiceProvider)
+        .verifyRegistrationCode(
+          accountRequestId: accountRequestId,
+          verificationCode: verificationCode,
+        );
+  }
+
+  /// Step 3: sets a password and completes account creation.
+  ///
+  /// Returns `true` on success, `false` when [password] is empty.
+  Future<bool> finishRegistration({
+    required String registrationToken,
+    required String email,
+    required String password,
+  }) async {
+    if (password.isEmpty) return false;
+    final session = await ref
+        .read(authServiceProvider)
+        .finishRegistration(
+          registrationToken: registrationToken,
+          email: email,
+          password: password,
+        );
+    state = SignedIn(session.email);
+    return true;
+  }
 }
 
 /// Convenience helper to derive a display label from [AuthState].
 String authLabel(AuthState state) => switch (state) {
+  AuthRestoring() => '',
   SignedOut() => 'Sign in',
   SignedIn(:final email) => email,
 };

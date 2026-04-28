@@ -10,10 +10,10 @@
 // ignore_for_file: invalid_use_of_internal_member
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'package:serverpod_client/serverpod_client.dart' as _i1;
+import 'dart:async' as _i2;
 import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart'
-    as _i1;
-import 'package:serverpod_client/serverpod_client.dart' as _i2;
-import 'dart:async' as _i3;
+    as _i3;
 import 'package:serverpod_auth_core_client/serverpod_auth_core_client.dart'
     as _i4;
 import 'package:tracking_training_client/src/protocol/routines/routine_day.dart'
@@ -28,12 +28,35 @@ import 'package:tracking_training_client/src/protocol/workouts/workout_set.dart'
     as _i9;
 import 'protocol.dart' as _i10;
 
+/// App-level authentication endpoint.
+///
+/// The Flutter client calls [seedDefaultRoutine] immediately after every
+/// successful
+/// sign-in and after restoring a persisted session.  It seeds the default
+/// four-day routine for new users and returns `false` for returning users.
+/// {@category Endpoint}
+class EndpointAppAuth extends _i1.EndpointRef {
+  EndpointAppAuth(_i1.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'appAuth';
+
+  /// Seeds the default four-day routine for first-time users.
+  ///
+  /// Returns `true` when data was seeded, `false` for returning users.
+  _i2.Future<bool> seedDefaultRoutine() => caller.callServerEndpoint<bool>(
+    'appAuth',
+    'seedDefaultRoutine',
+    {},
+  );
+}
+
 /// By extending [EmailIdpBaseEndpoint], the email identity provider endpoints
 /// are made available on the server and enable the corresponding sign-in widget
 /// on the client.
 /// {@category Endpoint}
-class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
-  EndpointEmailIdp(_i2.EndpointCaller caller) : super(caller);
+class EndpointEmailIdp extends _i3.EndpointEmailIdpBase {
+  EndpointEmailIdp(_i1.EndpointCaller caller) : super(caller);
 
   @override
   String get name => 'emailIdp';
@@ -48,7 +71,7 @@ class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
   ///
   /// Throws an [AuthUserBlockedException] if the auth user is blocked.
   @override
-  _i3.Future<_i4.AuthSuccess> login({
+  _i2.Future<_i4.AuthSuccess> login({
     required String email,
     required String password,
   }) => caller.callServerEndpoint<_i4.AuthSuccess>(
@@ -71,8 +94,8 @@ class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
   /// registration. If the email is already registered, the returned ID will not
   /// be valid.
   @override
-  _i3.Future<_i2.UuidValue> startRegistration({required String email}) =>
-      caller.callServerEndpoint<_i2.UuidValue>(
+  _i2.Future<_i1.UuidValue> startRegistration({required String email}) =>
+      caller.callServerEndpoint<_i1.UuidValue>(
         'emailIdp',
         'startRegistration',
         {'email': email},
@@ -89,8 +112,8 @@ class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
   /// - [EmailAccountRequestExceptionReason.invalid] if no request exists
   ///   for the given [accountRequestId] or [verificationCode] is invalid.
   @override
-  _i3.Future<String> verifyRegistrationCode({
-    required _i2.UuidValue accountRequestId,
+  _i2.Future<String> verifyRegistrationCode({
+    required _i1.UuidValue accountRequestId,
     required String verificationCode,
   }) => caller.callServerEndpoint<String>(
     'emailIdp',
@@ -116,7 +139,7 @@ class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
   ///
   /// Returns a session for the newly created user.
   @override
-  _i3.Future<_i4.AuthSuccess> finishRegistration({
+  _i2.Future<_i4.AuthSuccess> finishRegistration({
     required String registrationToken,
     required String password,
   }) => caller.callServerEndpoint<_i4.AuthSuccess>(
@@ -142,8 +165,8 @@ class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
   ///   made too many attempts trying to request a password reset.
   ///
   @override
-  _i3.Future<_i2.UuidValue> startPasswordReset({required String email}) =>
-      caller.callServerEndpoint<_i2.UuidValue>(
+  _i2.Future<_i1.UuidValue> startPasswordReset({required String email}) =>
+      caller.callServerEndpoint<_i1.UuidValue>(
         'emailIdp',
         'startPasswordReset',
         {'email': email},
@@ -164,8 +187,8 @@ class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
   /// should be overridden to return credentials for the next step instead
   /// of the credentials for setting the password.
   @override
-  _i3.Future<String> verifyPasswordResetCode({
-    required _i2.UuidValue passwordResetRequestId,
+  _i2.Future<String> verifyPasswordResetCode({
+    required _i1.UuidValue passwordResetRequestId,
     required String verificationCode,
   }) => caller.callServerEndpoint<String>(
     'emailIdp',
@@ -191,7 +214,7 @@ class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
   ///
   /// Throws an [AuthUserBlockedException] if the auth user is blocked.
   @override
-  _i3.Future<void> finishPasswordReset({
+  _i2.Future<void> finishPasswordReset({
     required String finishPasswordResetToken,
     required String newPassword,
   }) => caller.callServerEndpoint<void>(
@@ -204,7 +227,7 @@ class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
   );
 
   @override
-  _i3.Future<bool> hasAccount() => caller.callServerEndpoint<bool>(
+  _i2.Future<bool> hasAccount() => caller.callServerEndpoint<bool>(
     'emailIdp',
     'hasAccount',
     {},
@@ -215,7 +238,7 @@ class EndpointEmailIdp extends _i1.EndpointEmailIdpBase {
 /// is made available on the server and enables automatic token refresh on the client.
 /// {@category Endpoint}
 class EndpointJwtRefresh extends _i4.EndpointRefreshJwtTokens {
-  EndpointJwtRefresh(_i2.EndpointCaller caller) : super(caller);
+  EndpointJwtRefresh(_i1.EndpointCaller caller) : super(caller);
 
   @override
   String get name => 'jwtRefresh';
@@ -239,7 +262,7 @@ class EndpointJwtRefresh extends _i4.EndpointRefreshJwtTokens {
   /// This endpoint is unauthenticated, meaning the client won't include any
   /// authentication information with the call.
   @override
-  _i3.Future<_i4.AuthSuccess> refreshAccessToken({
+  _i2.Future<_i4.AuthSuccess> refreshAccessToken({
     required String refreshToken,
   }) => caller.callServerEndpoint<_i4.AuthSuccess>(
     'jwtRefresh',
@@ -251,14 +274,14 @@ class EndpointJwtRefresh extends _i4.EndpointRefreshJwtTokens {
 
 /// Manages the weekly routine split: days, focus areas, and exercises.
 /// {@category Endpoint}
-class EndpointRoutine extends _i2.EndpointRef {
-  EndpointRoutine(_i2.EndpointCaller caller) : super(caller);
+class EndpointRoutine extends _i1.EndpointRef {
+  EndpointRoutine(_i1.EndpointCaller caller) : super(caller);
 
   @override
   String get name => 'routine';
 
-  /// Returns all routine days ordered by [RoutineDay.sortOrder].
-  _i3.Future<List<_i5.RoutineDay>> getRoutineDays() =>
+  /// Returns all routine days for the signed-in user ordered by sortOrder.
+  _i2.Future<List<_i5.RoutineDay>> getRoutineDays() =>
       caller.callServerEndpoint<List<_i5.RoutineDay>>(
         'routine',
         'getRoutineDays',
@@ -266,7 +289,7 @@ class EndpointRoutine extends _i2.EndpointRef {
       );
 
   /// Updates a routine day's display title and focus-area labels.
-  _i3.Future<void> updateRoutineDay({
+  _i2.Future<void> updateRoutineDay({
     required int dayId,
     required String title,
     required List<String> focusAreas,
@@ -281,7 +304,7 @@ class EndpointRoutine extends _i2.EndpointRef {
   );
 
   /// Returns all exercises for [dayId] ordered by [ExerciseTemplate.sortOrder].
-  _i3.Future<List<_i6.ExerciseTemplate>> getExercises({required int dayId}) =>
+  _i2.Future<List<_i6.ExerciseTemplate>> getExercises({required int dayId}) =>
       caller.callServerEndpoint<List<_i6.ExerciseTemplate>>(
         'routine',
         'getExercises',
@@ -289,7 +312,7 @@ class EndpointRoutine extends _i2.EndpointRef {
       );
 
   /// Appends a new exercise to [dayId] and returns the persisted record.
-  _i3.Future<_i6.ExerciseTemplate> addExercise({
+  _i2.Future<_i6.ExerciseTemplate> addExercise({
     required int dayId,
     required String name,
     String? note,
@@ -304,7 +327,7 @@ class EndpointRoutine extends _i2.EndpointRef {
   );
 
   /// Updates the name and optional note for an exercise.
-  _i3.Future<void> updateExercise({
+  _i2.Future<void> updateExercise({
     required int exerciseId,
     required String name,
     String? note,
@@ -319,7 +342,7 @@ class EndpointRoutine extends _i2.EndpointRef {
   );
 
   /// Removes an exercise.
-  _i3.Future<void> removeExercise({required int exerciseId}) =>
+  _i2.Future<void> removeExercise({required int exerciseId}) =>
       caller.callServerEndpoint<void>(
         'routine',
         'removeExercise',
@@ -330,7 +353,7 @@ class EndpointRoutine extends _i2.EndpointRef {
   ///
   /// Each element of [exerciseIdsInOrder] is assigned a [sortOrder] equal to
   /// its list index.
-  _i3.Future<void> reorderExercises({
+  _i2.Future<void> reorderExercises({
     required int dayId,
     required List<int> exerciseIdsInOrder,
   }) => caller.callServerEndpoint<void>(
@@ -348,14 +371,14 @@ class EndpointRoutine extends _i2.EndpointRef {
 /// Session data is stored independently of routine templates so that editing
 /// or removing a routine day never mutates historical workout records.
 /// {@category Endpoint}
-class EndpointWorkout extends _i2.EndpointRef {
-  EndpointWorkout(_i2.EndpointCaller caller) : super(caller);
+class EndpointWorkout extends _i1.EndpointRef {
+  EndpointWorkout(_i1.EndpointCaller caller) : super(caller);
 
   @override
   String get name => 'workout';
 
   /// Returns all sessions ordered newest first.
-  _i3.Future<List<_i7.WorkoutSession>> listSessions() =>
+  _i2.Future<List<_i7.WorkoutSession>> listSessions() =>
       caller.callServerEndpoint<List<_i7.WorkoutSession>>(
         'workout',
         'listSessions',
@@ -363,7 +386,7 @@ class EndpointWorkout extends _i2.EndpointRef {
       );
 
   /// Returns a single session by ID, or `null` when not found.
-  _i3.Future<_i7.WorkoutSession?> getSession({required int sessionId}) =>
+  _i2.Future<_i7.WorkoutSession?> getSession({required int sessionId}) =>
       caller.callServerEndpoint<_i7.WorkoutSession?>(
         'workout',
         'getSession',
@@ -375,7 +398,7 @@ class EndpointWorkout extends _i2.EndpointRef {
   /// Snapshots the routine day title and exercise names at creation time so
   /// subsequent routine edits do not affect this historical record.  One
   /// default set is created for each exercise entry.
-  _i3.Future<_i7.WorkoutSession> createSessionFromRoutineDay({
+  _i2.Future<_i7.WorkoutSession> createSessionFromRoutineDay({
     required int routineDayId,
     required DateTime workoutDate,
   }) => caller.callServerEndpoint<_i7.WorkoutSession>(
@@ -391,7 +414,7 @@ class EndpointWorkout extends _i2.EndpointRef {
   ///
   /// This only updates the [WorkoutSession] row. To modify entries and sets
   /// use [saveSet] and [deleteSet].
-  _i3.Future<void> updateSessionMetadata({
+  _i2.Future<void> updateSessionMetadata({
     required _i7.WorkoutSession workoutSession,
   }) => caller.callServerEndpoint<void>(
     'workout',
@@ -400,7 +423,7 @@ class EndpointWorkout extends _i2.EndpointRef {
   );
 
   /// Deletes a session and all its entries and sets.
-  _i3.Future<void> deleteSession({required int sessionId}) =>
+  _i2.Future<void> deleteSession({required int sessionId}) =>
       caller.callServerEndpoint<void>(
         'workout',
         'deleteSession',
@@ -408,7 +431,7 @@ class EndpointWorkout extends _i2.EndpointRef {
       );
 
   /// Returns all entries for [sessionId].
-  _i3.Future<List<_i8.WorkoutEntry>> getEntries({required int sessionId}) =>
+  _i2.Future<List<_i8.WorkoutEntry>> getEntries({required int sessionId}) =>
       caller.callServerEndpoint<List<_i8.WorkoutEntry>>(
         'workout',
         'getEntries',
@@ -416,7 +439,7 @@ class EndpointWorkout extends _i2.EndpointRef {
       );
 
   /// Returns all sets for [entryId].
-  _i3.Future<List<_i9.WorkoutSet>> getSets({required int entryId}) =>
+  _i2.Future<List<_i9.WorkoutSet>> getSets({required int entryId}) =>
       caller.callServerEndpoint<List<_i9.WorkoutSet>>(
         'workout',
         'getSets',
@@ -424,7 +447,7 @@ class EndpointWorkout extends _i2.EndpointRef {
       );
 
   /// Upserts a single set.
-  _i3.Future<_i9.WorkoutSet> saveSet({required _i9.WorkoutSet workoutSet}) =>
+  _i2.Future<_i9.WorkoutSet> saveSet({required _i9.WorkoutSet workoutSet}) =>
       caller.callServerEndpoint<_i9.WorkoutSet>(
         'workout',
         'saveSet',
@@ -432,7 +455,7 @@ class EndpointWorkout extends _i2.EndpointRef {
       );
 
   /// Removes a set by ID.
-  _i3.Future<void> deleteSet({required int setId}) =>
+  _i2.Future<void> deleteSet({required int setId}) =>
       caller.callServerEndpoint<void>(
         'workout',
         'deleteSet',
@@ -442,16 +465,16 @@ class EndpointWorkout extends _i2.EndpointRef {
 
 class Modules {
   Modules(Client client) {
-    serverpod_auth_idp = _i1.Caller(client);
+    serverpod_auth_idp = _i3.Caller(client);
     serverpod_auth_core = _i4.Caller(client);
   }
 
-  late final _i1.Caller serverpod_auth_idp;
+  late final _i3.Caller serverpod_auth_idp;
 
   late final _i4.Caller serverpod_auth_core;
 }
 
-class Client extends _i2.ServerpodClientShared {
+class Client extends _i1.ServerpodClientShared {
   Client(
     String host, {
     dynamic securityContext,
@@ -462,12 +485,12 @@ class Client extends _i2.ServerpodClientShared {
     Duration? streamingConnectionTimeout,
     Duration? connectionTimeout,
     Function(
-      _i2.MethodCallContext,
+      _i1.MethodCallContext,
       Object,
       StackTrace,
     )?
     onFailedCall,
-    Function(_i2.MethodCallContext)? onSucceededCall,
+    Function(_i1.MethodCallContext)? onSucceededCall,
     bool? disconnectStreamsOnLostInternetConnection,
   }) : super(
          host,
@@ -480,12 +503,15 @@ class Client extends _i2.ServerpodClientShared {
          disconnectStreamsOnLostInternetConnection:
              disconnectStreamsOnLostInternetConnection,
        ) {
+    appAuth = EndpointAppAuth(this);
     emailIdp = EndpointEmailIdp(this);
     jwtRefresh = EndpointJwtRefresh(this);
     routine = EndpointRoutine(this);
     workout = EndpointWorkout(this);
     modules = Modules(this);
   }
+
+  late final EndpointAppAuth appAuth;
 
   late final EndpointEmailIdp emailIdp;
 
@@ -498,7 +524,8 @@ class Client extends _i2.ServerpodClientShared {
   late final Modules modules;
 
   @override
-  Map<String, _i2.EndpointRef> get endpointRefLookup => {
+  Map<String, _i1.EndpointRef> get endpointRefLookup => {
+    'appAuth': appAuth,
     'emailIdp': emailIdp,
     'jwtRefresh': jwtRefresh,
     'routine': routine,
@@ -506,7 +533,7 @@ class Client extends _i2.ServerpodClientShared {
   };
 
   @override
-  Map<String, _i2.ModuleEndpointCaller> get moduleLookup => {
+  Map<String, _i1.ModuleEndpointCaller> get moduleLookup => {
     'serverpod_auth_idp': modules.serverpod_auth_idp,
     'serverpod_auth_core': modules.serverpod_auth_core,
   };

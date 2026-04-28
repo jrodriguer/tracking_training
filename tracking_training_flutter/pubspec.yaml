@@ -39,7 +39,9 @@ dependencies:
   tracking_training_client:
     path: ../tracking_training_client
   serverpod_flutter: 3.4.5
+  serverpod_auth_core_flutter: 3.4.5
   serverpod_auth_idp_flutter: 3.4.5
+  flutter_secure_storage: ^10.0.0
 
 dev_dependencies:
   flutter_lints: '>=3.0.0 <7.0.0'

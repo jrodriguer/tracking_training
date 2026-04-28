@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,15 +17,34 @@ void main() {
     return container;
   }
 
+  Future<AuthState> waitForAuthRestore(ProviderContainer container) {
+    final completer = Completer<AuthState>();
+    final sub = container.listen<AuthState>(
+      authControllerProvider,
+      (_, next) {
+        if (next is! AuthRestoring && !completer.isCompleted) {
+          completer.complete(next);
+        }
+      },
+      fireImmediately: true,
+    );
+    return completer.future.whenComplete(sub.close);
+  }
+
   group('AuthController', () {
-    test('initial state is SignedOut', () {
-      final container = makeContainer();
-      expect(container.read(authControllerProvider), isA<SignedOut>());
-    });
+    test(
+      'initial state is AuthRestoring, then SignedOut with no session',
+      () async {
+        final container = makeContainer();
+        expect(container.read(authControllerProvider), isA<AuthRestoring>());
+        expect(await waitForAuthRestore(container), isA<SignedOut>());
+      },
+    );
 
     group('signIn', () {
       test('transitions to SignedIn with the provided email', () async {
         final container = makeContainer();
+        await waitForAuthRestore(container);
 
         final ok = await container
             .read(authControllerProvider.notifier)
@@ -37,6 +58,7 @@ void main() {
 
       test('returns false and keeps SignedOut when email is empty', () async {
         final container = makeContainer();
+        await waitForAuthRestore(container);
 
         final ok = await container
             .read(authControllerProvider.notifier)
@@ -50,6 +72,7 @@ void main() {
         'returns false and keeps SignedOut when password is empty',
         () async {
           final container = makeContainer();
+          await waitForAuthRestore(container);
 
           final ok = await container
               .read(authControllerProvider.notifier)
@@ -64,6 +87,7 @@ void main() {
     group('register', () {
       test('transitions to SignedIn with the provided email', () async {
         final container = makeContainer();
+        await waitForAuthRestore(container);
 
         final ok = await container
             .read(authControllerProvider.notifier)
@@ -77,6 +101,7 @@ void main() {
 
       test('returns false when email is empty', () async {
         final container = makeContainer();
+        await waitForAuthRestore(container);
 
         final ok = await container
             .read(authControllerProvider.notifier)
@@ -90,6 +115,7 @@ void main() {
     group('signOut', () {
       test('transitions from SignedIn back to SignedOut', () async {
         final container = makeContainer();
+        await waitForAuthRestore(container);
 
         await container
             .read(authControllerProvider.notifier)
@@ -108,10 +134,8 @@ void main() {
         });
 
         final container = makeContainer();
-        // Allow the async loadSession() future to complete.
-        await Future<void>.delayed(Duration.zero);
-
-        expect(container.read(authControllerProvider), isA<SignedIn>());
+        final state = await waitForAuthRestore(container);
+        expect(state, isA<SignedIn>());
         expect(
           (container.read(authControllerProvider) as SignedIn).email,
           'persisted@example.com',
@@ -120,15 +144,15 @@ void main() {
 
       test('signIn persists email so a new container can restore it', () async {
         final container = makeContainer();
+        await waitForAuthRestore(container);
         await container
             .read(authControllerProvider.notifier)
             .signIn(email: 'save@example.com', password: 'abc123');
 
         // Simulate app restart with a fresh container.
         final container2 = makeContainer();
-        await Future<void>.delayed(Duration.zero);
-
-        expect(container2.read(authControllerProvider), isA<SignedIn>());
+        final state = await waitForAuthRestore(container2);
+        expect(state, isA<SignedIn>());
         expect(
           (container2.read(authControllerProvider) as SignedIn).email,
           'save@example.com',
@@ -137,20 +161,23 @@ void main() {
 
       test('signOut clears the persisted session', () async {
         final container = makeContainer();
+        await waitForAuthRestore(container);
         await container
             .read(authControllerProvider.notifier)
             .signIn(email: 'user@example.com', password: 'abc123');
         await container.read(authControllerProvider.notifier).signOut();
 
         final container2 = makeContainer();
-        await Future<void>.delayed(Duration.zero);
-
-        expect(container2.read(authControllerProvider), isA<SignedOut>());
+        expect(await waitForAuthRestore(container2), isA<SignedOut>());
       });
     });
   });
 
   group('authLabel', () {
+    test('returns empty string for AuthRestoring', () {
+      expect(authLabel(const AuthRestoring()), '');
+    });
+
     test('returns "Sign in" for SignedOut', () {
       expect(authLabel(const SignedOut()), 'Sign in');
     });

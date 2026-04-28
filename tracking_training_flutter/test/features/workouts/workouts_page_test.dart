@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:tracking_training_flutter/features/auth/application/auth_controller.dart';
 import 'package:tracking_training_flutter/features/workouts/application/workout_controller.dart';
 import 'package:tracking_training_flutter/features/workouts/data/workout_repository.dart';
 import 'package:tracking_training_flutter/features/workouts/domain/workout_models.dart';
@@ -9,17 +10,40 @@ import 'package:tracking_training_flutter/features/workouts/presentation/workout
 import 'package:tracking_training_flutter/features/routines/domain/routine_models.dart';
 
 void main() {
+  Future<void> pumpWorkoutsPage(
+    WidgetTester tester,
+    _InMemoryWorkoutRepository repository,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authControllerProvider.overrideWith(_SignedInAuthController.new),
+          workoutRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: const MaterialApp(home: Scaffold(body: WorkoutsPage())),
+      ),
+    );
+  }
+
+  Future<void> seedSavedSession(_InMemoryWorkoutRepository repository) async {
+    final seededDay = RoutineDay(
+      id: 'day-1',
+      title: 'Day 1',
+      focusAreas: const ['Chest', 'Shoulders', 'Triceps'],
+      exercises: const [
+        ExerciseTemplate(id: 'd1-ex1', name: 'Barbell Bench Press'),
+      ],
+    );
+    final session = await repository.createSessionFromRoutineDay(seededDay);
+    await repository.upsertSession(session);
+  }
+
   testWidgets(
     'start button is disabled when an active session exists',
     (tester) async {
       final repository = _InMemoryWorkoutRepository();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [workoutRepositoryProvider.overrideWithValue(repository)],
-          child: const MaterialApp(home: Scaffold(body: WorkoutsPage())),
-        ),
-      );
+      await pumpWorkoutsPage(tester, repository);
 
       await tester.pumpAndSettle();
 
@@ -54,12 +78,7 @@ void main() {
   testWidgets('starts and saves session from workouts page', (tester) async {
     final repository = _InMemoryWorkoutRepository();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [workoutRepositoryProvider.overrideWithValue(repository)],
-        child: const MaterialApp(home: Scaffold(body: WorkoutsPage())),
-      ),
-    );
+    await pumpWorkoutsPage(tester, repository);
 
     await tester.pumpAndSettle();
 
@@ -86,26 +105,10 @@ void main() {
     'edit button in history loads saved session into active editor',
     (tester) async {
       final repository = _InMemoryWorkoutRepository();
+      await seedSavedSession(repository);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            workoutRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: WorkoutsPage()),
-          ),
-        ),
-      );
+      await pumpWorkoutsPage(tester, repository);
 
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Start workout session'));
-      await tester.pumpAndSettle();
-
-      await tester.ensureVisible(find.text('Save session'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Save session'));
       await tester.pumpAndSettle();
 
       await tester.ensureVisible(find.byTooltip('Edit session'));
@@ -115,162 +118,82 @@ void main() {
 
       // Session is loaded into the active editor.
       expect(find.textContaining('Active session:'), findsOneWidget);
-      // Session is hidden from history while being edited.
-      expect(find.text('No sessions logged yet.'), findsOneWidget);
+      // Session history is hidden while a saved session is being edited.
+      expect(find.text('Session history'), findsNothing);
       expect(find.byTooltip('Edit session'), findsNothing);
     },
   );
 
   testWidgets(
-    'conflict dialog Save path saves active session then edits the tapped one',
+    'history actions are hidden while an active session exists',
     (tester) async {
       final repository = _InMemoryWorkoutRepository();
+      await seedSavedSession(repository);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            workoutRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: WorkoutsPage()),
-          ),
-        ),
-      );
-
+      await pumpWorkoutsPage(tester, repository);
       await tester.pumpAndSettle();
 
-      // Save session-1.
-      await tester.tap(find.text('Start workout session'));
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save session'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Save session'));
-      await tester.pumpAndSettle();
-
-      // Start session-2 without saving — now there is an active session
-      // AND a history item (session-1).
-      await tester.tap(find.text('Start workout session'));
-      await tester.pumpAndSettle();
-
-      // Tap Edit on session-1 in history → conflict dialog appears.
-      await tester.ensureVisible(find.byTooltip('Edit session'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Edit session'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Unsaved session'), findsOneWidget);
-
-      // Choose Save → session-2 is saved, session-1 becomes active.
-      await tester.tap(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.widgetWithText(FilledButton, 'Save'),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('Active session:'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'conflict dialog Discard path discards active session then edits the '
-    'tapped one',
-    (tester) async {
-      final repository = _InMemoryWorkoutRepository();
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            workoutRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: WorkoutsPage()),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Save session-1, then start session-2 (active, not saved).
-      await tester.tap(find.text('Start workout session'));
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save session'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Save session'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Start workout session'));
-      await tester.pumpAndSettle();
-
-      // Tap Edit on session-1 → conflict dialog.
-      await tester.ensureVisible(find.byTooltip('Edit session'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Edit session'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Unsaved session'), findsOneWidget);
-
-      // Choose Discard → session-2 discarded, session-1 becomes active.
-      await tester.tap(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.widgetWithText(OutlinedButton, 'Discard'),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('Active session:'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'conflict dialog Cancel path leaves the active session untouched',
-    (tester) async {
-      final repository = _InMemoryWorkoutRepository();
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            workoutRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: WorkoutsPage()),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Save session-1, then start session-2 (active, not saved).
-      await tester.tap(find.text('Start workout session'));
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Save session'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Save session'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Start workout session'));
-      await tester.pumpAndSettle();
-
-      // Tap Edit on session-1 → conflict dialog.
-      await tester.ensureVisible(find.byTooltip('Edit session'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Edit session'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Unsaved session'), findsOneWidget);
-
-      // Choose Cancel → nothing changes.
-      await tester.tap(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.widgetWithText(TextButton, 'Cancel'),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // session-2 is still the active session; session-1 is still in history.
-      expect(find.textContaining('Active session:'), findsOneWidget);
       expect(find.byTooltip('Edit session'), findsOneWidget);
+      expect(find.byTooltip('Delete session'), findsOneWidget);
+
+      await tester.tap(find.text('Start workout session'));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Edit session'), findsNothing);
+      expect(find.byTooltip('Delete session'), findsNothing);
+      expect(find.text('Session history'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'discarding active session reveals history actions again',
+    (tester) async {
+      final repository = _InMemoryWorkoutRepository();
+      await seedSavedSession(repository);
+
+      await pumpWorkoutsPage(tester, repository);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Start workout session'));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Edit session'), findsNothing);
+
+      final discardButton = find.widgetWithText(OutlinedButton, 'Discard');
+      await tester.ensureVisible(discardButton);
+      await tester.pumpAndSettle();
+      await tester.tap(discardButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Edit session'), findsOneWidget);
+      expect(find.byTooltip('Delete session'), findsOneWidget);
+      expect(find.text('Session history'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'saving active session restores history list with session actions',
+    (tester) async {
+      final repository = _InMemoryWorkoutRepository();
+      await seedSavedSession(repository);
+
+      await pumpWorkoutsPage(tester, repository);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Start workout session'));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Edit session'), findsNothing);
+
+      final saveButton = find.text('Save session');
+      await tester.ensureVisible(saveButton);
+      await tester.pumpAndSettle();
+      await tester.tap(saveButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Edit session'), findsWidgets);
+      expect(find.byTooltip('Delete session'), findsWidgets);
+      expect(find.text('Session history'), findsOneWidget);
     },
   );
 
@@ -279,16 +202,7 @@ void main() {
     (tester) async {
       final repository = _InMemoryWorkoutRepository();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            workoutRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(body: WorkoutsPage()),
-          ),
-        ),
-      );
+      await pumpWorkoutsPage(tester, repository);
 
       await tester.pumpAndSettle();
 
@@ -313,6 +227,11 @@ void main() {
       expect(find.text('No sessions logged yet.'), findsOneWidget);
     },
   );
+}
+
+class _SignedInAuthController extends AuthController {
+  @override
+  AuthState build() => const SignedIn('test@example.com');
 }
 
 class _InMemoryWorkoutRepository implements WorkoutRepository {
