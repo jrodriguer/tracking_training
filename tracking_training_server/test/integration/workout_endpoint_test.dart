@@ -10,11 +10,11 @@ import 'test_tools/serverpod_test_tools.dart';
 
 /// A stable UUID used as the owner for all test data in this file.
 final _testUserId = UuidValue.fromString(
-  '00000000-0000-0000-0000-000000000001',
+  '00000000-0000-4000-8000-000000000001',
 );
 
 final _otherUserId = UuidValue.fromString(
-  '00000000-0000-0000-0000-000000000002',
+  '00000000-0000-4000-8000-000000000002',
 );
 
 void main() {
@@ -24,14 +24,25 @@ void main() {
     sessionBuilder,
     endpoints,
   ) {
+    late TestSessionBuilder authedSession;
+
+    setUp(() {
+      authedSession = sessionBuilder.copyWith(
+        authentication: AuthenticationOverride.authenticationInfo(
+          _testUserId.toString(),
+          <Scope>{},
+        ),
+      );
+    });
+
     test('listSessions returns empty list', () async {
-      final sessions = await endpoints.workout.listSessions(sessionBuilder);
+      final sessions = await endpoints.workout.listSessions(authedSession);
       expect(sessions, isEmpty);
     });
 
     test('getSession returns null for unknown id', () async {
       final session = await endpoints.workout.getSession(
-        sessionBuilder,
+        authedSession,
         sessionId: 999999,
       );
       expect(session, isNull);
