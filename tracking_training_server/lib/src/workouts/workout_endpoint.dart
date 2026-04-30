@@ -197,7 +197,10 @@ class WorkoutEndpoint extends Endpoint {
   }) async {
     final userId = await requireUserId(session);
     if (workoutSet.id == null) {
-      final parentEntry = await WorkoutEntry.db.findById(session, workoutSet.entryId);
+      final parentEntry = await WorkoutEntry.db.findById(
+        session,
+        workoutSet.entryId,
+      );
       if (parentEntry == null) throw Exception('Not authorized');
       final parentSession = await WorkoutSession.db.findById(
         session,

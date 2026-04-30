@@ -152,6 +152,38 @@ void main() {
         expect(sets.first.weight, 0.0);
       });
 
+      test(
+        'uses selected workoutDate without weekday-based shifting',
+        () async {
+          final selectedDate = DateTime.utc(2024, 4, 3);
+          final shiftedBack = selectedDate.subtract(const Duration(days: 1));
+          final shiftedForward = selectedDate.add(const Duration(days: 1));
+
+          final workoutSession = await endpoints.workout
+              .createSessionFromRoutineDay(
+                authedSession,
+                routineDayId: testDay.id!,
+                workoutDate: selectedDate,
+              );
+
+          bool isSameCalendarDate(DateTime a, DateTime b) {
+            return a.year == b.year && a.month == b.month && a.day == b.day;
+          }
+
+          expect(workoutSession.startedAt.year, 2024);
+          expect(workoutSession.startedAt.month, 4);
+          expect(workoutSession.startedAt.day, 3);
+          expect(
+            isSameCalendarDate(workoutSession.startedAt, shiftedBack),
+            isFalse,
+          );
+          expect(
+            isSameCalendarDate(workoutSession.startedAt, shiftedForward),
+            isFalse,
+          );
+        },
+      );
+
       test('throws when routineDayId does not exist', () async {
         expect(
           () => endpoints.workout.createSessionFromRoutineDay(

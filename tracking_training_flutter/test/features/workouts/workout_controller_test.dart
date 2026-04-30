@@ -163,6 +163,30 @@ void main() {
     expect(state.activeSession?.startedAt, pastDate);
   });
 
+  test(
+    'startSession preserves selected date when weekday mismatches routine day position',
+    () async {
+      final repository = _InMemoryWorkoutRepository();
+      final container = ProviderContainer(
+        overrides: [workoutRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(workoutControllerProvider.future);
+
+      final selectedDate = DateTime(2024, 4, 3);
+      final weekSunday = DateTime(2024, 3, 31);
+
+      await container
+          .read(workoutControllerProvider.notifier)
+          .startSession(_fixtureDay(), workoutDate: selectedDate);
+
+      final state = container.read(workoutControllerProvider).value!;
+      expect(state.activeSession?.startedAt, selectedDate);
+      expect(state.activeSession?.startedAt, isNot(weekSunday));
+    },
+  );
+
   test('deleteSession clears activeSession when the ids match', () async {
     final repository = _InMemoryWorkoutRepository();
     final container = ProviderContainer(

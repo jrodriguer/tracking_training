@@ -52,74 +52,70 @@ class _WorkoutsPageState extends ConsumerState<WorkoutsPage> {
 
     return ListView(
       children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Start session',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Routine day',
-                    border: OutlineInputBorder(),
+        if (workoutState.activeSession == null) ...[
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Start session',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  child: DropdownButton<String>(
-                    value: selectedDay?.id,
-                    isExpanded: true,
-                    underline: const SizedBox.shrink(),
-                    items: [
-                      for (final day in days)
-                        DropdownMenuItem(value: day.id, child: Text(day.title)),
-                    ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedDayId = value;
-                      });
-                    },
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _DatePickerField(
-                  label: 'Workout date',
-                  date: _selectedWorkoutDate,
-                  onChanged: (date) {
-                    setState(() => _selectedWorkoutDate = date);
-                  },
-                ),
-                const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed:
-                      selectedDay == null || workoutState.activeSession != null
-                      ? null
-                      : () => ref
-                            .read(workoutControllerProvider.notifier)
-                            .startSession(
-                              selectedDay,
-                              workoutDate: _selectedWorkoutDate,
-                            ),
-                  icon: const Icon(Icons.play_arrow_outlined),
-                  label: const Text('Start workout session'),
-                ),
-                if (workoutState.activeSession != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      'Save or discard the active session before starting a new one.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
+                  const SizedBox(height: 12),
+                  InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Routine day',
+                      border: OutlineInputBorder(),
+                    ),
+                    child: DropdownButton<String>(
+                      value: selectedDay?.id,
+                      isExpanded: true,
+                      underline: const SizedBox.shrink(),
+                      items: [
+                        for (final day in days)
+                          DropdownMenuItem(
+                            value: day.id,
+                            child: Text(day.title),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedDayId = value;
+                        });
+                      },
                     ),
                   ),
-              ],
+                  const SizedBox(height: 12),
+                  _DatePickerField(
+                    label: 'Workout date',
+                    date: _selectedWorkoutDate,
+                    onChanged: (date) {
+                      setState(() => _selectedWorkoutDate = date);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: selectedDay == null
+                        ? null
+                        : () => ref
+                              .read(workoutControllerProvider.notifier)
+                              .startSession(
+                                selectedDay,
+                                workoutDate: _asCalendarDate(
+                                  _selectedWorkoutDate,
+                                ),
+                              ),
+                    icon: const Icon(Icons.play_arrow_outlined),
+                    label: const Text('Start workout session'),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
+        ],
         if (workoutState.activeSession case final activeSession?)
           _ActiveSessionCard(session: activeSession)
         else
@@ -191,7 +187,7 @@ class _ActiveSessionCard extends ConsumerWidget {
                     if (picked == null || !context.mounted) return;
                     ref
                         .read(workoutControllerProvider.notifier)
-                        .updateSessionDate(picked);
+                        .updateSessionDate(_asCalendarDate(picked));
                   },
                   icon: const Icon(Icons.edit_calendar_outlined),
                   tooltip: 'Change workout date',
@@ -583,7 +579,7 @@ class _DatePickerField extends StatelessWidget {
           lastDate: DateTime.now(),
         );
         if (picked == null || !context.mounted) return;
-        onChanged(picked);
+        onChanged(_asCalendarDate(picked));
       },
       child: InputDecorator(
         decoration: InputDecoration(
@@ -682,4 +678,8 @@ _showSetEditorDialog(
       );
     },
   );
+}
+
+DateTime _asCalendarDate(DateTime value) {
+  return DateTime(value.year, value.month, value.day);
 }

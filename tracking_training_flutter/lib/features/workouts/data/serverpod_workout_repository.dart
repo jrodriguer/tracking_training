@@ -27,9 +27,10 @@ class ServerpodWorkoutRepository implements WorkoutRepository {
     RoutineDay day, {
     DateTime? workoutDate,
   }) async {
+    final selectedDate = _toProtocolCalendarDate(workoutDate ?? DateTime.now());
     final serverSession = await _client.workout.createSessionFromRoutineDay(
       routineDayId: int.parse(day.id),
-      workoutDate: workoutDate ?? DateTime.now(),
+      workoutDate: selectedDate,
     );
     return _fetchFullSession(serverSession);
   }
@@ -42,7 +43,7 @@ class ServerpodWorkoutRepository implements WorkoutRepository {
         userId: _requireAuthUserId(),
         routineDayId: int.parse(session.routineDayId),
         routineDayTitle: session.routineDayTitle,
-        startedAt: session.startedAt,
+        startedAt: _toProtocolCalendarDate(session.startedAt),
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
       ),
@@ -81,10 +82,20 @@ class ServerpodWorkoutRepository implements WorkoutRepository {
       routineDayId: s.routineDayId.toString(),
       routineDayTitle: s.routineDayTitle,
       createdAt: s.createdAt,
-      startedAt: s.startedAt,
+      startedAt: _fromProtocolCalendarDate(s.startedAt),
       updatedAt: s.updatedAt,
       entries: entries,
     );
+  }
+
+  DateTime _toProtocolCalendarDate(DateTime date) {
+    final localDate = DateTime(date.year, date.month, date.day);
+    return DateTime.utc(localDate.year, localDate.month, localDate.day);
+  }
+
+  DateTime _fromProtocolCalendarDate(DateTime date) {
+    final utcDate = date.isUtc ? date : date.toUtc();
+    return DateTime(utcDate.year, utcDate.month, utcDate.day);
   }
 
   Future<WorkoutEntry> _fetchFullEntry(sp.WorkoutEntry entry) async {

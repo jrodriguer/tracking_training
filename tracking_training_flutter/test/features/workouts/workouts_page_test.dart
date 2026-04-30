@@ -39,7 +39,7 @@ void main() {
   }
 
   testWidgets(
-    'start button is disabled when an active session exists',
+    'start session card is hidden and active session card is visible when active session exists',
     (tester) async {
       final repository = _InMemoryWorkoutRepository();
 
@@ -61,17 +61,8 @@ void main() {
       await tester.tap(startButton);
       await tester.pumpAndSettle();
 
-      // Button is disabled and hint text is shown while a session is active.
-      expect(
-        tester.widget<FilledButton>(startButton).onPressed,
-        isNull,
-      );
-      expect(
-        find.text(
-          'Save or discard the active session before starting a new one.',
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('Start session'), findsNothing);
+      expect(find.textContaining('Active session:'), findsOneWidget);
     },
   );
 
