@@ -16,6 +16,30 @@ When you are finished, you can shut down Serverpod with `Ctrl-C`, then stop Post
 
     docker compose stop
 
+## Local Auth (Email Verification)
+
+In local development, SMTP is not required. The email identity provider prints
+verification codes to the server terminal instead of sending real emails.
+
+Example terminal output:
+
+    [EmailIdp] Registration code (user@example.com): 123456
+
+End-to-end local flow:
+
+1. In `tracking_training_server/`, start dependencies: `docker compose up -d`
+2. Run the server: `dart run bin/main.dart --apply-migrations`
+3. Open the Flutter app and go to Create Account.
+4. Enter an email and tap Continue.
+5. Watch the server terminal for `[EmailIdp] Registration code (...)`.
+6. Copy the 6-digit code into the app.
+7. Set a password to finish account creation.
+8. Sign in with the same email and password.
+
+`config/passwords.yaml` must exist and include these required keys:
+`emailSecretHashPepper`, `jwtHmacSha512PrivateKey`, and
+`jwtRefreshTokenHashPepper`.
+
 ## Validation
 
 Before opening a pull request for backend work, run these commands from
