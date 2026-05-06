@@ -14,10 +14,7 @@ Execute the following workflow using GitHub's MCP:
    - Reference file names and specific modifications
 4. Push the branch to the remote repository.
 5. Create a Pull Request (PR) with that branch.
-6. Merge the PR (if any conflict is found, the process will stop and you will be notified).
-7. Delete the branch from both remote and local repositories.
-8. Check out the main branch again and pull the latest changes.
-9. Show closed PR link
+8. Show PR link
 
 This workflow ensures consistent, clear, and traceable contributions.
 Don't ask for GitHub repo (owner/repo) or branch name; just generate them based on the changes and project context.
