@@ -13,6 +13,7 @@ jobs:
       VERSION: '3.4.5'
       SERVERPOD_PASSWORD_database: '0Pg2wdcwgDVkhX3r2n8RNRKXst1Pbk6j'
       SERVERPOD_PASSWORD_redis: 'OaSA_IQrsYjI2vSHfYH214nUzbiDWtip'
+      SERVERPOD_PASSWORD_jwtRefreshTokenHashPepper: ${{ secrets.JWT_REFRESH_TOKEN_HASH_PEPPER }}
 
     steps:
       - uses: actions/checkout@v4
