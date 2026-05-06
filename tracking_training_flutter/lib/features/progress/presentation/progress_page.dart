@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../application/progress_metrics.dart';
 import '../../workouts/application/workout_controller.dart';
 import '../../workouts/domain/workout_models.dart';
 import '../domain/progress_metrics.dart';
+import 'widgets/exercise_history_table.dart';
 import 'widgets/progress_chart.dart';
 
 class ProgressPage extends ConsumerWidget {
@@ -37,6 +39,8 @@ class ProgressPage extends ConsumerWidget {
       );
     }
 
+    final historyMap = ProgressMetricsMapper.historyByExercise(sessions);
+
     // Collect unique exercises (preserves first-seen order).
     final seen = <String>{};
     final exercises = <({String id, String name})>[];
@@ -57,6 +61,7 @@ class ProgressPage extends ConsumerWidget {
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final exercise = exercises[index];
+        final historyRows = historyMap[exercise.id] ?? const [];
         final points = ProgressMetrics.maxWeightByDate(
           exerciseId: exercise.id,
           sessions: sessions,
@@ -79,7 +84,17 @@ class ProgressPage extends ConsumerWidget {
                     context,
                   ).textTheme.bodySmall!.copyWith(color: Colors.grey),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                Text(
+                  'History',
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ExerciseHistoryTable(rows: historyRows),
+                const SizedBox(height: 20),
                 ProgressChart(points: points),
               ],
             ),
