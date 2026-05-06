@@ -1,5 +1,23 @@
 import '../../workouts/domain/workout_models.dart';
 
+/// Presentation-ready history row for an exercise within a workout session.
+class ExerciseHistoryRow {
+  const ExerciseHistoryRow({
+    required this.date,
+    required this.setsSummary,
+    required this.notes,
+  });
+
+  /// Session date normalized to date-only.
+  final DateTime date;
+
+  /// Compact set display for history tables.
+  final String setsSummary;
+
+  /// Distinct non-empty notes from all sets in the session.
+  final String? notes;
+}
+
 /// A single point in a progress series: a calendar date and a value.
 class ProgressPoint {
   const ProgressPoint({required this.date, required this.value});

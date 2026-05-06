@@ -1,3 +1,4 @@
+import '../domain/progress_metrics.dart';
 import '../../workouts/domain/workout_models.dart';
 
 enum ProgressRange {
@@ -113,4 +114,76 @@ DateTime? _cutoffFor(ProgressRange range, {DateTime? now}) {
   final current = now ?? DateTime.now();
   final startOfDay = DateTime(current.year, current.month, current.day);
   return startOfDay.subtract(Duration(days: days));
+}
+
+abstract final class ProgressMetricsMapper {
+  static Map<String, List<ExerciseHistoryRow>> historyByExercise(
+    List<WorkoutSession> sessions,
+  ) {
+    final byExercise = <String, List<ExerciseHistoryRow>>{};
+
+    for (final session in sessions) {
+      final sessionDate = _dateOnly(session.startedAt);
+      final sessionSetsByExercise = <String, List<WorkoutSet>>{};
+
+      for (final entry in session.entries) {
+        sessionSetsByExercise
+            .putIfAbsent(entry.exerciseTemplateId, () => [])
+            .addAll(entry.sets);
+      }
+
+      for (final item in sessionSetsByExercise.entries) {
+        final sets = item.value;
+        final row = ExerciseHistoryRow(
+          date: sessionDate,
+          setsSummary: _setsSummary(sets),
+          notes: _mergedNotes(sets),
+        );
+
+        byExercise.putIfAbsent(item.key, () => []).add(row);
+      }
+    }
+
+    for (final rows in byExercise.values) {
+      rows.sort((a, b) => b.date.compareTo(a.date));
+    }
+
+    return byExercise;
+  }
+}
+
+DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
+
+String _setsSummary(List<WorkoutSet> sets) {
+  if (sets.isEmpty) return '';
+
+  final first = sets.first;
+  final isUniform = sets.every(
+    (set) => set.reps == first.reps && set.weight == first.weight,
+  );
+
+  if (isUniform) {
+    return '${sets.length}×${first.reps} @ ${first.weight}kg';
+  }
+
+  final parts = <String>[];
+  for (var i = 0; i < sets.length; i++) {
+    final set = sets[i];
+    parts.add('Set ${i + 1}: ${set.reps}×${set.weight}kg');
+  }
+  return parts.join(', ');
+}
+
+String? _mergedNotes(List<WorkoutSet> sets) {
+  final seen = <String>{};
+  final notes = <String>[];
+
+  for (final set in sets) {
+    final note = set.note?.trim();
+    if (note == null || note.isEmpty) continue;
+    if (seen.add(note)) notes.add(note);
+  }
+
+  if (notes.isEmpty) return null;
+  return notes.join('; ');
 }
