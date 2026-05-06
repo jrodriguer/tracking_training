@@ -29,6 +29,9 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
         }
 
         _selectedDayId ??= days.first.id;
+        if (_dayById(days, _selectedDayId) == null) {
+          _selectedDayId = days.first.id;
+        }
 
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -52,15 +55,32 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
       itemBuilder: (context, index) {
         final day = days[index];
 
-        return _RoutineDayCard(
-          day: day,
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => _RoutineDayDetailScreen(dayId: day.id),
-              ),
-            );
-          },
+        return Dismissible(
+          key: ValueKey(day.id),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.error,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            child: Icon(
+              Icons.delete,
+              color: Theme.of(context).colorScheme.onError,
+            ),
+          ),
+          confirmDismiss: (_) => _confirmDeleteDay(context, day.id),
+          child: _RoutineDayCard(
+            day: day,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => _RoutineDayDetailScreen(dayId: day.id),
+                ),
+              );
+            },
+          ),
         );
       },
     );
@@ -79,14 +99,31 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
             itemBuilder: (context, index) {
               final day = days[index];
 
-              return _RoutineDayCard(
-                day: day,
-                selected: day.id == selectedDay.id,
-                onTap: () {
-                  setState(() {
-                    _selectedDayId = day.id;
-                  });
-                },
+              return Dismissible(
+                key: ValueKey(day.id),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.error,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  child: Icon(
+                    Icons.delete,
+                    color: Theme.of(context).colorScheme.onError,
+                  ),
+                ),
+                confirmDismiss: (_) => _confirmDeleteDay(context, day.id),
+                child: _RoutineDayCard(
+                  day: day,
+                  selected: day.id == selectedDay.id,
+                  onTap: () {
+                    setState(() {
+                      _selectedDayId = day.id;
+                    });
+                  },
+                ),
               );
             },
           ),
@@ -112,6 +149,23 @@ class _RoutinesPageState extends ConsumerState<RoutinesPage> {
     }
 
     return null;
+  }
+
+  Future<bool> _confirmDeleteDay(BuildContext context, String dayId) async {
+    final confirm = await _showConfirmDeleteDialog(context);
+
+    if (confirm) {
+      final success = await ref
+          .read(routineControllerProvider.notifier)
+          .removeDay(dayId: dayId);
+      if (success && _selectedDayId == dayId) {
+        setState(() {
+          _selectedDayId = null;
+        });
+      }
+      return success;
+    }
+    return false;
   }
 }
 
@@ -217,6 +271,14 @@ class _RoutineDayDetail extends ConsumerWidget {
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Edit day details',
             ),
+            IconButton(
+              onPressed: () => _handleDeleteDay(context, ref, day.id),
+              icon: Icon(
+                Icons.delete_outline,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              tooltip: 'Remove day',
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -321,6 +383,24 @@ class _RoutineDayDetail extends ConsumerWidget {
     return content;
   }
 
+  Future<void> _handleDeleteDay(
+    BuildContext context,
+    WidgetRef ref,
+    String dayId,
+  ) async {
+    final confirm = await _showConfirmDeleteDialog(context);
+
+    if (confirm) {
+      final success = await ref
+          .read(routineControllerProvider.notifier)
+          .removeDay(dayId: dayId);
+
+      if (success && !embeddedInCard && context.mounted) {
+        Navigator.of(context).pop();
+      }
+    }
+  }
+
   Future<void> _showEditDayDialog(
     BuildContext context,
     WidgetRef ref,
@@ -386,6 +466,34 @@ class _RoutineDayDetail extends ConsumerWidget {
           note: result.note,
         );
   }
+}
+
+Future<bool> _showConfirmDeleteDialog(BuildContext context) async {
+  final confirm = await showDialog<bool>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Remove day?'),
+        content: const Text('Are you sure you want to remove this day?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      );
+    },
+  );
+
+  return confirm ?? false;
 }
 
 Future<({String title, List<String> focusAreas})?> _showDayEditor(

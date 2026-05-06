@@ -10,6 +10,10 @@ abstract class RoutineRepository {
     required List<String> focusAreas,
   });
 
+  Future<bool> removeRoutineDay({
+    required String dayId,
+  });
+
   Future<ExerciseTemplate> addExercise({
     required String dayId,
     required String name,

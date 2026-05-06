@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tracking_training_flutter/features/auth/application/auth_controller.dart';
 import 'package:tracking_training_flutter/features/routines/application/routine_controller.dart';
+import 'package:tracking_training_flutter/features/routines/data/routine_repository.dart';
 import 'package:tracking_training_flutter/features/routines/domain/routine_models.dart';
 
 void main() {
@@ -11,10 +12,14 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  ProviderContainer makeSignedInContainer() {
+  ProviderContainer makeSignedInContainer({
+    RoutineRepository? repository,
+  }) {
     final container = ProviderContainer(
       overrides: [
         authControllerProvider.overrideWith(_SignedInAuthController.new),
+        if (repository != null)
+          routineRepositoryProvider.overrideWithValue(repository),
       ],
     );
     addTearDown(container.dispose);
@@ -245,6 +250,40 @@ void main() {
       });
     });
 
+    group('removeDay', () {
+      test('removes the specified day when repository succeeds', () async {
+        final container = makeSignedInContainer();
+        final days = await container.read(routineControllerProvider.future);
+        final target = days.first;
+
+        final removed = await container
+            .read(routineControllerProvider.notifier)
+            .removeDay(dayId: target.id);
+
+        final updatedDays = container.read(routineControllerProvider).value!;
+        expect(removed, isTrue);
+        expect(updatedDays, hasLength(days.length - 1));
+        expect(updatedDays.any((day) => day.id == target.id), isFalse);
+      });
+
+      test('returns false and keeps state when repository fails', () async {
+        final container = makeSignedInContainer(
+          repository: const _FailingRoutineRepository(),
+        );
+        final days = await container.read(routineControllerProvider.future);
+        final target = days.first;
+
+        final removed = await container
+            .read(routineControllerProvider.notifier)
+            .removeDay(dayId: target.id);
+
+        final updatedDays = container.read(routineControllerProvider).value!;
+        expect(removed, isFalse);
+        expect(updatedDays, hasLength(days.length));
+        expect(updatedDays.any((day) => day.id == target.id), isTrue);
+      });
+    });
+
     group('routineDayByIdProvider', () {
       test('returns the matching day for a known id', () async {
         final container = makeSignedInContainer();
@@ -282,4 +321,13 @@ class _SignedInAuthController extends AuthController {
 class _SignedOutAuthController extends AuthController {
   @override
   AuthState build() => const SignedOut();
+}
+
+class _FailingRoutineRepository extends FakeRoutineRepository {
+  const _FailingRoutineRepository();
+
+  @override
+  Future<bool> removeRoutineDay({required String dayId}) {
+    throw StateError('remove failed');
+  }
 }

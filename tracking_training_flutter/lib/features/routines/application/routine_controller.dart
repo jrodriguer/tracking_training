@@ -53,6 +53,26 @@ class RoutineController extends AsyncNotifier<List<RoutineDay>> {
     ]);
   }
 
+  Future<bool> removeDay({
+    required String dayId,
+  }) async {
+    final currentDays = state.value ?? const <RoutineDay>[];
+
+    try {
+      final removed = await _repository.removeRoutineDay(dayId: dayId);
+      if (!removed) return false;
+
+      state = AsyncData([
+        for (final day in currentDays)
+          if (day.id != dayId) day,
+      ]);
+      return true;
+    } catch (_) {
+      state = AsyncData(currentDays);
+      return false;
+    }
+  }
+
   Future<void> addExercise({
     required String dayId,
     required String name,
@@ -182,6 +202,11 @@ class FakeRoutineRepository implements RoutineRepository {
     required String title,
     required List<String> focusAreas,
   }) async {}
+
+  @override
+  Future<bool> removeRoutineDay({
+    required String dayId,
+  }) async => true;
 
   @override
   Future<ExerciseTemplate> addExercise({

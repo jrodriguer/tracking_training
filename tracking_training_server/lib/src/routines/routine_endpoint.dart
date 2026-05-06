@@ -41,6 +41,38 @@ class RoutineEndpoint extends Endpoint {
     );
   }
 
+  /// Removes a routine day and its child exercises, then re-normalizes
+  /// sibling day sortOrder values.
+  Future<bool> removeRoutineDay(
+    Session session, {
+    required int routineDayId,
+  }) async {
+    final userId = await requireUserId(session);
+    final day = await _ownedDay(session, routineDayId, userId);
+    final remainingDays = await RoutineDay.db.find(
+      session,
+      where: (t) => t.userId.equals(userId) & t.id.notEquals(routineDayId),
+      orderBy: (t) => t.sortOrder,
+    );
+
+    await ExerciseTemplate.db.deleteWhere(
+      session,
+      where: (t) => t.routineDayId.equals(routineDayId),
+    );
+    await RoutineDay.db.deleteRow(session, day);
+
+    final now = DateTime.now();
+    final updates = [
+      for (var i = 0; i < remainingDays.length; i++)
+        if (remainingDays[i].sortOrder != i)
+          remainingDays[i].copyWith(sortOrder: i, updatedAt: now),
+    ];
+    if (updates.isNotEmpty) {
+      await RoutineDay.db.update(session, updates);
+    }
+    return true;
+  }
+
   // ── Exercises ─────────────────────────────────────────────────────────────
 
   /// Returns all exercises for [dayId] ordered by [ExerciseTemplate.sortOrder].

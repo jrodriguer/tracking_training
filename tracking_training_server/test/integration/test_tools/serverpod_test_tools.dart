@@ -610,6 +610,37 @@ class _RoutineEndpoint {
     });
   }
 
+  _i3.Future<bool> removeRoutineDay(
+    _i1.TestSessionBuilder sessionBuilder, {
+    required int routineDayId,
+  }) async {
+    return _i1.callAwaitableFunctionAndHandleExceptions(() async {
+      var _localUniqueSession =
+          (sessionBuilder as _i1.InternalTestSessionBuilder).internalBuild(
+            endpoint: 'routine',
+            method: 'removeRoutineDay',
+          );
+      try {
+        var _localCallContext = await _endpointDispatch.getMethodCallContext(
+          createSessionCallback: (_) => _localUniqueSession,
+          endpointPath: 'routine',
+          methodName: 'removeRoutineDay',
+          parameters: _i1.testObjectToJson({'routineDayId': routineDayId}),
+          serializationManager: _serializationManager,
+        );
+        var _localReturnValue =
+            await (_localCallContext.method.call(
+                  _localUniqueSession,
+                  _localCallContext.arguments,
+                )
+                as _i3.Future<bool>);
+        return _localReturnValue;
+      } finally {
+        await _localUniqueSession.close();
+      }
+    });
+  }
+
   _i3.Future<List<_i6.ExerciseTemplate>> getExercises(
     _i1.TestSessionBuilder sessionBuilder, {
     required int dayId,

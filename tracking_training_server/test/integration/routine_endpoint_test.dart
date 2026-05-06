@@ -8,6 +8,9 @@ import 'test_tools/serverpod_test_tools.dart';
 final _testUserId = UuidValue.fromString(
   '00000000-0000-4000-8000-000000000001',
 );
+final _otherUserId = UuidValue.fromString(
+  '00000000-0000-4000-8000-000000000002',
+);
 
 void main() {
   // ── Empty-state tests ────────────────────────────────────────────────────
@@ -131,6 +134,106 @@ void main() {
           throwsA(anything),
         );
       });
+    });
+
+    group('removeRoutineDay', () {
+      test(
+        'removes the day, removes child exercises, and normalizes sortOrder',
+        () async {
+          final session = sessionBuilder.build();
+          final secondDay = await RoutineDay.db.insertRow(
+            session,
+            RoutineDay(
+              userId: _testUserId,
+              title: 'Pull Day',
+              sortOrder: 1,
+              focusAreas: ['Back'],
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+          );
+          final thirdDay = await RoutineDay.db.insertRow(
+            session,
+            RoutineDay(
+              userId: _testUserId,
+              title: 'Leg Day',
+              sortOrder: 2,
+              focusAreas: ['Legs'],
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+          );
+          final removableExercise = await endpoints.routine.addExercise(
+            authedSession,
+            dayId: secondDay.id!,
+            name: 'Barbell Row',
+          );
+          await endpoints.routine.addExercise(
+            authedSession,
+            dayId: thirdDay.id!,
+            name: 'Squat',
+          );
+
+          final removed = await endpoints.routine.removeRoutineDay(
+            authedSession,
+            routineDayId: secondDay.id!,
+          );
+
+          expect(removed, isTrue);
+
+          final days = await endpoints.routine.getRoutineDays(authedSession);
+          expect(days.length, 2);
+          expect(days[0].title, 'Push Day');
+          expect(days[0].sortOrder, 0);
+          expect(days[1].title, 'Leg Day');
+          expect(days[1].sortOrder, 1);
+
+          final deletedExercise = await ExerciseTemplate.db.findById(
+            session,
+            removableExercise.id!,
+          );
+          expect(deletedExercise, isNull);
+
+          final survivingDayExercises = await endpoints.routine.getExercises(
+            authedSession,
+            dayId: thirdDay.id!,
+          );
+          expect(survivingDayExercises.length, 1);
+          expect(survivingDayExercises.first.name, 'Squat');
+        },
+      );
+
+      test(
+        'throws when routineDayId is not owned by the authenticated user',
+        () async {
+          final session = sessionBuilder.build();
+          final foreignDay = await RoutineDay.db.insertRow(
+            session,
+            RoutineDay(
+              userId: _otherUserId,
+              title: 'Foreign Day',
+              sortOrder: 0,
+              focusAreas: ['Back'],
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+          );
+
+          expect(
+            () => endpoints.routine.removeRoutineDay(
+              authedSession,
+              routineDayId: foreignDay.id!,
+            ),
+            throwsA(
+              isA<Exception>().having(
+                (e) => e.toString(),
+                'message',
+                contains('RoutineDay ${foreignDay.id!} not found.'),
+              ),
+            ),
+          );
+        },
+      );
     });
 
     group('addExercise', () {
