@@ -325,6 +325,25 @@ class Endpoints extends _i1.EndpointDispatch {
                     focusAreas: params['focusAreas'],
                   ),
         ),
+        'removeRoutineDay': _i1.MethodConnector(
+          name: 'removeRoutineDay',
+          params: {
+            'routineDayId': _i1.ParameterDescription(
+              name: 'routineDayId',
+              type: _i1.getType<int>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async => (endpoints['routine'] as _i5.RoutineEndpoint)
+                  .removeRoutineDay(
+                    session,
+                    routineDayId: params['routineDayId'],
+                  ),
+        ),
         'getExercises': _i1.MethodConnector(
           name: 'getExercises',
           params: {

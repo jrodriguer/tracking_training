@@ -303,6 +303,15 @@ class EndpointRoutine extends _i1.EndpointRef {
     },
   );
 
+  /// Removes a routine day and its child exercises, then re-normalizes
+  /// sibling day sortOrder values.
+  _i2.Future<bool> removeRoutineDay({required int routineDayId}) =>
+      caller.callServerEndpoint<bool>(
+        'routine',
+        'removeRoutineDay',
+        {'routineDayId': routineDayId},
+      );
+
   /// Returns all exercises for [dayId] ordered by [ExerciseTemplate.sortOrder].
   _i2.Future<List<_i6.ExerciseTemplate>> getExercises({required int dayId}) =>
       caller.callServerEndpoint<List<_i6.ExerciseTemplate>>(

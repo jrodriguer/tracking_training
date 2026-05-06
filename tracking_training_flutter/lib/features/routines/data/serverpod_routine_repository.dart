@@ -51,6 +51,13 @@ class ServerpodRoutineRepository implements RoutineRepository {
   }
 
   @override
+  Future<bool> removeRoutineDay({
+    required String dayId,
+  }) {
+    return _client.routine.removeRoutineDay(routineDayId: int.parse(dayId));
+  }
+
+  @override
   Future<ExerciseTemplate> addExercise({
     required String dayId,
     required String name,
