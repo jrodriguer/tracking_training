@@ -17,6 +17,7 @@ These are the only agents you can call. Each has a specific role:
 - **Planner** — Creates implementation strategies and technical plans
 - **Coder** — Writes code, fixes bugs, implements logic
 - **Designer** — Creates UI/UX, styling, visual design
+- **Reviewer** — Reviews completed implementation for risks, regressions, and security vulnerabilities/compliance issues
 
 ## Execution Model
 
@@ -67,8 +68,11 @@ For each phase:
 3. **Wait for all tasks in phase to complete** before starting next phase
 4. **Report progress** — After each phase, summarize what was completed
 
-### Step 4: Verify and Report
-After all phases complete, verify the work hangs together and report results.
+### Step 4: Review After Coding
+After all implementation phases are complete, run the **Reviewer** (**Security Reviewer**) once on the full diff to catch regressions, security issues, and policy risks.
+
+### Step 5: Verify and Report
+After review feedback is addressed, verify the work hangs together and report results.
 
 ## Parallelization Rules
 
@@ -164,6 +168,9 @@ When delegating, describe WHAT needs to be done (the outcome), not HOW to do it.
 Run all tasks in a phase together when their files do not overlap. Wait for
 the full phase result before starting the next one.
 
-### Step 4: Verify and report
+### Step 4: Review after coding
+Run **Reviewer** (**Security Reviewer**) after coding phases complete and before final verification.
+
+### Step 5: Verify and report
 Summarize what changed, what was validated, and any open risks before you
 finish.

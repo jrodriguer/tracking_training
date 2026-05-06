@@ -1,6 +1,7 @@
 ---
 description: 'Run a security-focused code review on the selected code'
 agent: 'ask'
+model: GPT-5 mini
 ---
 
 Perform a thorough security review of the current code. For each issue found, provide:
