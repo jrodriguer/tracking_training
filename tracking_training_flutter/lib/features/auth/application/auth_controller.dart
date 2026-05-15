@@ -1,10 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/auth_service.dart';
+import '../domain/sign_in_result.dart';
 
 /// Represents the current authentication state of the app.
 sealed class AuthState {
-  const AuthState();
+  const AuthState({this.lastSignInResult, this.isSigningIn = false});
+
+  final SignInResult? lastSignInResult;
+  final bool isSigningIn;
 }
 
 /// The app is restoring a persisted session on startup.
@@ -14,12 +18,12 @@ final class AuthRestoring extends AuthState {
 
 /// The user is not authenticated.
 final class SignedOut extends AuthState {
-  const SignedOut();
+  const SignedOut({super.lastSignInResult, super.isSigningIn});
 }
 
 /// The user has successfully authenticated.
 final class SignedIn extends AuthState {
-  const SignedIn(this.email);
+  const SignedIn(this.email, {super.lastSignInResult});
 
   final String email;
 }
@@ -41,9 +45,12 @@ class AuthController extends Notifier<AuthState> {
     return const AuthRestoring();
   }
 
-  Future<void> _restoreSession() async {
+  Future<void> _restoreSession({SignInResult? result}) async {
     final session = await ref.read(authServiceProvider).loadSession();
-    state = session != null ? SignedIn(session.email) : const SignedOut();
+    if (!ref.mounted) return;
+    state = session != null
+        ? SignedIn(session.email, lastSignInResult: result)
+        : SignedOut(lastSignInResult: result);
   }
 
   /// Signs in with [email] and [password].
@@ -54,11 +61,19 @@ class AuthController extends Notifier<AuthState> {
     required String password,
   }) async {
     if (email.isEmpty || password.isEmpty) return false;
-    final session = await ref
+    state = const SignedOut(isSigningIn: true);
+    final result = await ref
         .read(authServiceProvider)
         .signIn(email: email, password: password);
-    state = SignedIn(session.email);
-    return true;
+    if (!ref.mounted) return false;
+    switch (result) {
+      case SignInSuccess():
+        await _restoreSession(result: result);
+        return true;
+      case SignInFailure():
+        state = SignedOut(lastSignInResult: result);
+        return false;
+    }
   }
 
   /// Registers a new account with [email] and [password] (single-step fake).

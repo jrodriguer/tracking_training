@@ -1,7 +1,12 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:serverpod_auth_core_flutter/serverpod_auth_core_flutter.dart';
+import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart';
 import 'package:tracking_training_client/tracking_training_client.dart';
 
 import 'auth_service.dart';
+import '../domain/sign_in_result.dart';
 
 /// Real [AuthService] backed by the Serverpod email identity provider.
 class ServerpodAuthService implements AuthService {
@@ -45,20 +50,42 @@ class ServerpodAuthService implements AuthService {
   }
 
   @override
-  Future<AuthSession> signIn({
+  Future<SignInResult> signIn({
     required String email,
     required String password,
   }) async {
-    final auth = await _client.emailIdp.login(
-      email: email,
-      password: password,
-    );
-    await _sessionManager.updateSignedInUser(auth);
-    await _storage.write(key: _emailKey, value: email);
-    final session = AuthSession(email: email, signedInAt: DateTime.now());
-    _session = session;
-    await _seedDefaultRoutineBestEffort();
-    return session;
+    try {
+      final auth = await _client.emailIdp.login(
+        email: email,
+        password: password,
+      );
+      await _sessionManager.updateSignedInUser(auth);
+      await _storage.write(key: _emailKey, value: email);
+      final session = AuthSession(email: email, signedInAt: DateTime.now());
+      _session = session;
+      await _seedDefaultRoutineBestEffort();
+      return const SignInSuccess();
+    } on EmailAccountLoginException catch (e) {
+      return SignInFailure(
+        switch (e.reason) {
+          EmailAccountLoginExceptionReason.invalidCredentials =>
+            SignInFailureReason.invalidCredentials,
+          EmailAccountLoginExceptionReason.tooManyAttempts =>
+            SignInFailureReason.tooManyAttempts,
+          _ => SignInFailureReason.unknown,
+        },
+      );
+    } on AuthUserBlockedException {
+      return const SignInFailure(SignInFailureReason.userBlocked);
+    } on TimeoutException {
+      return const SignInFailure(SignInFailureReason.networkError);
+    } on SocketException {
+      return const SignInFailure(SignInFailureReason.networkError);
+    } on IOException {
+      return const SignInFailure(SignInFailureReason.networkError);
+    } catch (_) {
+      return const SignInFailure(SignInFailureReason.unknown);
+    }
   }
 
   @override
