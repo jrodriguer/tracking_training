@@ -39,6 +39,10 @@ final authControllerProvider = NotifierProvider<AuthController, AuthState>(
 /// Auth controller.  The service implementation can be swapped by replacing
 /// [authServiceProvider].
 class AuthController extends Notifier<AuthState> {
+  String _normalizeEmail(String email) => email.trim().toLowerCase();
+
+  bool _isValidEmail(String email) => validateEmail(email) == null;
+
   @override
   AuthState build() {
     _restoreSession();
@@ -60,11 +64,12 @@ class AuthController extends Notifier<AuthState> {
     required String email,
     required String password,
   }) async {
-    if (email.isEmpty || password.isEmpty) return false;
+    final normalizedEmail = _normalizeEmail(email);
+    if (!_isValidEmail(normalizedEmail) || password.isEmpty) return false;
     state = const SignedOut(isSigningIn: true);
     final result = await ref
         .read(authServiceProvider)
-        .signIn(email: email, password: password);
+        .signIn(email: normalizedEmail, password: password);
     if (!ref.mounted) return false;
     switch (result) {
       case SignInSuccess():
@@ -83,10 +88,11 @@ class AuthController extends Notifier<AuthState> {
     required String email,
     required String password,
   }) async {
-    if (email.isEmpty || password.isEmpty) return false;
+    final normalizedEmail = _normalizeEmail(email);
+    if (!_isValidEmail(normalizedEmail) || password.isEmpty) return false;
     final session = await ref
         .read(authServiceProvider)
-        .register(email: email, password: password);
+        .register(email: normalizedEmail, password: password);
     state = SignedIn(session.email);
     return true;
   }
@@ -105,9 +111,10 @@ class AuthController extends Notifier<AuthState> {
   /// the service completed registration inline ([FakeAuthService]).  When `null`
   /// is returned the state has already transitioned to [SignedIn].
   Future<String?> startRegistration(String email) async {
-    if (email.isEmpty) return null;
+    final normalizedEmail = _normalizeEmail(email);
+    if (!_isValidEmail(normalizedEmail)) return null;
     final service = ref.read(authServiceProvider);
-    final requestId = await service.startRegistration(email);
+    final requestId = await service.startRegistration(normalizedEmail);
     if (requestId == null) {
       // Fake flow: session stored inline – load it to transition state.
       final session = await service.loadSession();
@@ -121,11 +128,16 @@ class AuthController extends Notifier<AuthState> {
     required String accountRequestId,
     required String verificationCode,
   }) {
+    final trimmedRequestId = accountRequestId.trim();
+    final trimmedCode = verificationCode.trim();
+    if (trimmedRequestId.isEmpty || trimmedCode.isEmpty) {
+      throw ArgumentError('Account request ID and verification code are required.');
+    }
     return ref
         .read(authServiceProvider)
         .verifyRegistrationCode(
-          accountRequestId: accountRequestId,
-          verificationCode: verificationCode,
+          accountRequestId: trimmedRequestId,
+          verificationCode: trimmedCode,
         );
   }
 
@@ -137,12 +149,20 @@ class AuthController extends Notifier<AuthState> {
     required String email,
     required String password,
   }) async {
-    if (password.isEmpty) return false;
+    final normalizedEmail = _normalizeEmail(email);
+    final trimmedToken = registrationToken.trim();
+    if (
+        trimmedToken.isEmpty ||
+        !_isValidEmail(normalizedEmail) ||
+        password.isEmpty
+    ) {
+      return false;
+    }
     final session = await ref
         .read(authServiceProvider)
         .finishRegistration(
-          registrationToken: registrationToken,
-          email: email,
+          registrationToken: trimmedToken,
+          email: normalizedEmail,
           password: password,
         );
     state = SignedIn(session.email);

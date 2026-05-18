@@ -24,6 +24,8 @@ class ServerpodAuthService implements AuthService {
 
   AuthSession? _session;
 
+  String _normalizeEmail(String email) => email.trim().toLowerCase();
+
   Future<void> _seedDefaultRoutineBestEffort() async {
     try {
       await _client.appAuth.seedDefaultRoutine();
@@ -54,14 +56,18 @@ class ServerpodAuthService implements AuthService {
     required String email,
     required String password,
   }) async {
+    final normalizedEmail = _normalizeEmail(email);
     try {
       final auth = await _client.emailIdp.login(
-        email: email,
+        email: normalizedEmail,
         password: password,
       );
       await _sessionManager.updateSignedInUser(auth);
-      await _storage.write(key: _emailKey, value: email);
-      final session = AuthSession(email: email, signedInAt: DateTime.now());
+      await _storage.write(key: _emailKey, value: normalizedEmail);
+      final session = AuthSession(
+        email: normalizedEmail,
+        signedInAt: DateTime.now(),
+      );
       _session = session;
       await _seedDefaultRoutineBestEffort();
       return const SignInSuccess();
@@ -108,7 +114,13 @@ class ServerpodAuthService implements AuthService {
 
   @override
   Future<String?> startRegistration(String email) async {
-    final uuid = await _client.emailIdp.startRegistration(email: email);
+    final normalizedEmail = _normalizeEmail(email);
+    if (normalizedEmail.isEmpty) {
+      throw ArgumentError('Email is required.');
+    }
+    final uuid = await _client.emailIdp.startRegistration(
+      email: normalizedEmail,
+    );
     return uuid.toString();
   }
 
@@ -117,9 +129,14 @@ class ServerpodAuthService implements AuthService {
     required String accountRequestId,
     required String verificationCode,
   }) {
+    final trimmedRequestId = accountRequestId.trim();
+    final trimmedCode = verificationCode.trim();
+    if (trimmedRequestId.isEmpty || trimmedCode.isEmpty) {
+      throw ArgumentError('Account request ID and verification code are required.');
+    }
     return _client.emailIdp.verifyRegistrationCode(
-      accountRequestId: UuidValue.fromString(accountRequestId),
-      verificationCode: verificationCode,
+      accountRequestId: UuidValue.fromString(trimmedRequestId),
+      verificationCode: trimmedCode,
     );
   }
 
@@ -129,13 +146,21 @@ class ServerpodAuthService implements AuthService {
     required String email,
     required String password,
   }) async {
+    final normalizedEmail = _normalizeEmail(email);
+    final trimmedToken = registrationToken.trim();
+    if (trimmedToken.isEmpty || normalizedEmail.isEmpty) {
+      throw ArgumentError('Registration token and email are required.');
+    }
     final auth = await _client.emailIdp.finishRegistration(
-      registrationToken: registrationToken,
+      registrationToken: trimmedToken,
       password: password,
     );
     await _sessionManager.updateSignedInUser(auth);
-    await _storage.write(key: _emailKey, value: email);
-    final session = AuthSession(email: email, signedInAt: DateTime.now());
+    await _storage.write(key: _emailKey, value: normalizedEmail);
+    final session = AuthSession(
+      email: normalizedEmail,
+      signedInAt: DateTime.now(),
+    );
     _session = session;
     await _seedDefaultRoutineBestEffort();
     return session;

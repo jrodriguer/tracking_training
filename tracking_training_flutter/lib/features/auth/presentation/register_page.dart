@@ -14,6 +14,9 @@ class RegisterPage extends ConsumerStatefulWidget {
 }
 
 class _RegisterPageState extends ConsumerState<RegisterPage> {
+  static const _genericErrorMessage =
+      'Something went wrong. Please try again.';
+
   final _emailKey = GlobalKey<FormState>();
   final _verifyKey = GlobalKey<FormState>();
   final _passwordKey = GlobalKey<FormState>();
@@ -65,8 +68,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         _accountRequestId = requestId;
         _step = _RegistrationStep.verifyCode;
       });
-    } catch (e) {
-      if (mounted) setState(() => _errorMessage = e.toString());
+    } catch (_) {
+      if (mounted) setState(() => _errorMessage = _genericErrorMessage);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -91,8 +94,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         _registrationToken = token;
         _step = _RegistrationStep.password;
       });
-    } catch (e) {
-      if (mounted) setState(() => _errorMessage = e.toString());
+    } catch (_) {
+      if (mounted) setState(() => _errorMessage = _genericErrorMessage);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -113,8 +116,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             password: _passwordController.text,
           );
       // Router redirects automatically when state transitions to SignedIn.
-    } catch (e) {
-      if (mounted) setState(() => _errorMessage = e.toString());
+    } catch (_) {
+      if (mounted) setState(() => _errorMessage = _genericErrorMessage);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
