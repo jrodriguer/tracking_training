@@ -59,21 +59,32 @@ class AuthController extends Notifier<AuthState> {
 
   /// Signs in with [email] and [password].
   ///
-  /// Returns `true` on success, `false` when either field is empty.
+  /// Returns `true` on success, `false` when credentials are invalid or
+  /// authentication fails.
   Future<bool> signIn({
     required String email,
     required String password,
   }) async {
     final normalizedEmail = _normalizeEmail(email);
     if (!_isValidEmail(normalizedEmail) || password.isEmpty) return false;
+    final service = ref.read(authServiceProvider);
     state = const SignedOut(isSigningIn: true);
-    final result = await ref
-        .read(authServiceProvider)
-        .signIn(email: normalizedEmail, password: password);
+    final result = await service.signIn(
+      email: normalizedEmail,
+      password: password,
+    );
     if (!ref.mounted) return false;
     switch (result) {
       case SignInSuccess():
-        await _restoreSession(result: result);
+        final currentSession = service.currentSession;
+        if (currentSession != null) {
+          state = SignedIn(
+            currentSession.email,
+            lastSignInResult: result,
+          );
+        } else {
+          await _restoreSession(result: result);
+        }
         return true;
       case SignInFailure():
         state = SignedOut(lastSignInResult: result);
@@ -195,3 +206,16 @@ String? validatePassword(String? value) {
   if (value.length < 6) return 'Password must be at least 6 characters.';
   return null;
 }
+
+String signInFailureMessage(SignInFailureReason reason) => switch (reason) {
+  SignInFailureReason.invalidCredentials =>
+    'Email or password is incorrect.',
+  SignInFailureReason.tooManyAttempts =>
+    'Too many attempts. Please try again later.',
+  SignInFailureReason.userBlocked =>
+    'This account is temporarily blocked.',
+  SignInFailureReason.networkError =>
+    'Network error. Check your connection and try again.',
+  SignInFailureReason.unknown =>
+    'Unable to sign in right now. Please try again.',
+};

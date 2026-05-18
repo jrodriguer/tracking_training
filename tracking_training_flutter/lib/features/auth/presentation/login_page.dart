@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../application/auth_controller.dart';
+import '../domain/sign_in_result.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -37,6 +38,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
+    final signInFailure = authState is SignedOut
+        ? authState.lastSignInResult as SignInFailure?
+        : null;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Sign in')),
       body: Center(
@@ -83,10 +89,25 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     onFieldSubmitted: (_) => _submit(),
                     validator: validatePassword,
                   ),
+                  if (signInFailure != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      signInFailureMessage(signInFailure.reason),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 20),
                   FilledButton(
-                    onPressed: _submit,
-                    child: const Text('Sign in'),
+                    onPressed: authState.isSigningIn ? null : _submit,
+                    child: authState.isSigningIn
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Sign in'),
                   ),
                   TextButton(
                     onPressed: () => context.go('/auth/register'),

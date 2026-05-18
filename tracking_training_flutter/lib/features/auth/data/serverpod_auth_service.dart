@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:serverpod_auth_core_flutter/serverpod_auth_core_flutter.dart';
 import 'package:serverpod_auth_idp_client/serverpod_auth_idp_client.dart';
@@ -62,15 +61,27 @@ class ServerpodAuthService implements AuthService {
         email: normalizedEmail,
         password: password,
       );
-      await _sessionManager.updateSignedInUser(auth);
-      await _storage.write(key: _emailKey, value: normalizedEmail);
-      final session = AuthSession(
-        email: normalizedEmail,
-        signedInAt: DateTime.now(),
-      );
-      _session = session;
-      await _seedDefaultRoutineBestEffort();
-      return const SignInSuccess();
+
+      try {
+        await _sessionManager.updateSignedInUser(auth);
+        await _storage.write(key: _emailKey, value: normalizedEmail);
+        final session = AuthSession(
+          email: normalizedEmail,
+          signedInAt: DateTime.now(),
+        );
+        _session = session;
+        await _seedDefaultRoutineBestEffort();
+        return const SignInSuccess();
+      } catch (_) {
+        _session = null;
+        try {
+          await _sessionManager.updateSignedInUser(null);
+        } catch (_) {}
+        try {
+          await _storage.delete(key: _emailKey);
+        } catch (_) {}
+        return const SignInFailure(SignInFailureReason.unknown);
+      }
     } on EmailAccountLoginException catch (e) {
       return SignInFailure(
         switch (e.reason) {
@@ -84,10 +95,6 @@ class ServerpodAuthService implements AuthService {
     } on AuthUserBlockedException {
       return const SignInFailure(SignInFailureReason.userBlocked);
     } on TimeoutException {
-      return const SignInFailure(SignInFailureReason.networkError);
-    } on SocketException {
-      return const SignInFailure(SignInFailureReason.networkError);
-    } on IOException {
       return const SignInFailure(SignInFailureReason.networkError);
     } catch (_) {
       return const SignInFailure(SignInFailureReason.unknown);
