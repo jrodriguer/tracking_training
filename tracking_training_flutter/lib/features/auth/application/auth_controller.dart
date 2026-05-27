@@ -1,10 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/auth_service.dart';
+import '../domain/sign_in_result.dart';
 
 /// Represents the current authentication state of the app.
 sealed class AuthState {
-  const AuthState();
+  const AuthState({this.lastSignInResult, this.isSigningIn = false});
+
+  final SignInResult? lastSignInResult;
+  final bool isSigningIn;
 }
 
 /// The app is restoring a persisted session on startup.
@@ -14,12 +18,12 @@ final class AuthRestoring extends AuthState {
 
 /// The user is not authenticated.
 final class SignedOut extends AuthState {
-  const SignedOut();
+  const SignedOut({super.lastSignInResult, super.isSigningIn});
 }
 
 /// The user has successfully authenticated.
 final class SignedIn extends AuthState {
-  const SignedIn(this.email);
+  const SignedIn(this.email, {super.lastSignInResult});
 
   final String email;
 }
@@ -35,30 +39,57 @@ final authControllerProvider = NotifierProvider<AuthController, AuthState>(
 /// Auth controller.  The service implementation can be swapped by replacing
 /// [authServiceProvider].
 class AuthController extends Notifier<AuthState> {
+  String _normalizeEmail(String email) => email.trim().toLowerCase();
+
+  bool _isValidEmail(String email) => validateEmail(email) == null;
+
   @override
   AuthState build() {
     _restoreSession();
     return const AuthRestoring();
   }
 
-  Future<void> _restoreSession() async {
+  Future<void> _restoreSession({SignInResult? result}) async {
     final session = await ref.read(authServiceProvider).loadSession();
-    state = session != null ? SignedIn(session.email) : const SignedOut();
+    if (!ref.mounted) return;
+    state = session != null
+        ? SignedIn(session.email, lastSignInResult: result)
+        : SignedOut(lastSignInResult: result);
   }
 
   /// Signs in with [email] and [password].
   ///
-  /// Returns `true` on success, `false` when either field is empty.
+  /// Returns `true` on success, `false` when credentials are invalid or
+  /// authentication fails.
   Future<bool> signIn({
     required String email,
     required String password,
   }) async {
-    if (email.isEmpty || password.isEmpty) return false;
-    final session = await ref
-        .read(authServiceProvider)
-        .signIn(email: email, password: password);
-    state = SignedIn(session.email);
-    return true;
+    final normalizedEmail = _normalizeEmail(email);
+    if (!_isValidEmail(normalizedEmail) || password.isEmpty) return false;
+    final service = ref.read(authServiceProvider);
+    state = const SignedOut(isSigningIn: true);
+    final result = await service.signIn(
+      email: normalizedEmail,
+      password: password,
+    );
+    if (!ref.mounted) return false;
+    switch (result) {
+      case SignInSuccess():
+        final currentSession = service.currentSession;
+        if (currentSession != null) {
+          state = SignedIn(
+            currentSession.email,
+            lastSignInResult: result,
+          );
+        } else {
+          await _restoreSession(result: result);
+        }
+        return true;
+      case SignInFailure():
+        state = SignedOut(lastSignInResult: result);
+        return false;
+    }
   }
 
   /// Registers a new account with [email] and [password] (single-step fake).
@@ -68,10 +99,11 @@ class AuthController extends Notifier<AuthState> {
     required String email,
     required String password,
   }) async {
-    if (email.isEmpty || password.isEmpty) return false;
+    final normalizedEmail = _normalizeEmail(email);
+    if (!_isValidEmail(normalizedEmail) || password.isEmpty) return false;
     final session = await ref
         .read(authServiceProvider)
-        .register(email: email, password: password);
+        .register(email: normalizedEmail, password: password);
     state = SignedIn(session.email);
     return true;
   }
@@ -90,9 +122,10 @@ class AuthController extends Notifier<AuthState> {
   /// the service completed registration inline ([FakeAuthService]).  When `null`
   /// is returned the state has already transitioned to [SignedIn].
   Future<String?> startRegistration(String email) async {
-    if (email.isEmpty) return null;
+    final normalizedEmail = _normalizeEmail(email);
+    if (!_isValidEmail(normalizedEmail)) return null;
     final service = ref.read(authServiceProvider);
-    final requestId = await service.startRegistration(email);
+    final requestId = await service.startRegistration(normalizedEmail);
     if (requestId == null) {
       // Fake flow: session stored inline – load it to transition state.
       final session = await service.loadSession();
@@ -106,11 +139,16 @@ class AuthController extends Notifier<AuthState> {
     required String accountRequestId,
     required String verificationCode,
   }) {
+    final trimmedRequestId = accountRequestId.trim();
+    final trimmedCode = verificationCode.trim();
+    if (trimmedRequestId.isEmpty || trimmedCode.isEmpty) {
+      throw ArgumentError('Account request ID and verification code are required.');
+    }
     return ref
         .read(authServiceProvider)
         .verifyRegistrationCode(
-          accountRequestId: accountRequestId,
-          verificationCode: verificationCode,
+          accountRequestId: trimmedRequestId,
+          verificationCode: trimmedCode,
         );
   }
 
@@ -122,12 +160,20 @@ class AuthController extends Notifier<AuthState> {
     required String email,
     required String password,
   }) async {
-    if (password.isEmpty) return false;
+    final normalizedEmail = _normalizeEmail(email);
+    final trimmedToken = registrationToken.trim();
+    if (
+        trimmedToken.isEmpty ||
+        !_isValidEmail(normalizedEmail) ||
+        password.isEmpty
+    ) {
+      return false;
+    }
     final session = await ref
         .read(authServiceProvider)
         .finishRegistration(
-          registrationToken: registrationToken,
-          email: email,
+          registrationToken: trimmedToken,
+          email: normalizedEmail,
           password: password,
         );
     state = SignedIn(session.email);
@@ -160,3 +206,16 @@ String? validatePassword(String? value) {
   if (value.length < 6) return 'Password must be at least 6 characters.';
   return null;
 }
+
+String signInFailureMessage(SignInFailureReason reason) => switch (reason) {
+  SignInFailureReason.invalidCredentials =>
+    'Email or password is incorrect.',
+  SignInFailureReason.tooManyAttempts =>
+    'Too many attempts. Please try again later.',
+  SignInFailureReason.userBlocked =>
+    'This account is temporarily blocked.',
+  SignInFailureReason.networkError =>
+    'Network error. Check your connection and try again.',
+  SignInFailureReason.unknown =>
+    'Unable to sign in right now. Please try again.',
+};

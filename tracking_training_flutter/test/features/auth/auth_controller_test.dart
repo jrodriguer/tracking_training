@@ -5,14 +5,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tracking_training_flutter/features/auth/application/auth_controller.dart';
+import 'package:tracking_training_flutter/features/auth/data/auth_service.dart';
+import 'package:tracking_training_flutter/features/auth/domain/sign_in_result.dart';
 
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  ProviderContainer makeContainer() {
-    final container = ProviderContainer();
+  ProviderContainer makeContainer({
+    List overrides = const [],
+  }) {
+    final container = ProviderContainer(overrides: overrides.cast());
     addTearDown(container.dispose);
     return container;
   }
@@ -82,6 +86,30 @@ void main() {
           expect(container.read(authControllerProvider), isA<SignedOut>());
         },
       );
+
+      test('stores SignInFailure in SignedOut state when auth fails', () async {
+        final container = makeContainer(
+          overrides: [
+            authServiceProvider.overrideWith(
+              (_) => _AlwaysFailAuthService(),
+            ),
+          ],
+        );
+        await waitForAuthRestore(container);
+
+        final ok = await container
+            .read(authControllerProvider.notifier)
+            .signIn(email: 'user@example.com', password: 'secret1');
+
+        expect(ok, isFalse);
+        final state = container.read(authControllerProvider);
+        expect(state, isA<SignedOut>());
+        expect((state as SignedOut).lastSignInResult, isA<SignInFailure>());
+        expect(
+          ((state.lastSignInResult as SignInFailure).reason),
+          SignInFailureReason.invalidCredentials,
+        );
+      });
     });
 
     group('register', () {
@@ -227,4 +255,53 @@ void main() {
       expect(validatePassword('supersecret'), isNull);
     });
   });
+}
+
+class _AlwaysFailAuthService implements AuthService {
+  @override
+  AuthSession? get currentSession => null;
+
+  @override
+  Future<AuthSession?> loadSession() async => null;
+
+  @override
+  Future<SignInResult> signIn({
+    required String email,
+    required String password,
+  }) async {
+    return const SignInFailure(SignInFailureReason.invalidCredentials);
+  }
+
+  @override
+  Future<AuthSession> register({
+    required String email,
+    required String password,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> signOut() async {}
+
+  @override
+  Future<String?> startRegistration(String email) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<String> verifyRegistrationCode({
+    required String accountRequestId,
+    required String verificationCode,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<AuthSession> finishRegistration({
+    required String registrationToken,
+    required String email,
+    required String password,
+  }) async {
+    throw UnimplementedError();
+  }
 }

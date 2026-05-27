@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/sign_in_result.dart';
+
 class AuthSession {
   const AuthSession({required this.email, required this.signedInAt});
 
@@ -14,7 +16,10 @@ abstract class AuthService {
 
   AuthSession? get currentSession;
 
-  Future<AuthSession> signIn({required String email, required String password});
+  Future<SignInResult> signIn({
+    required String email,
+    required String password,
+  });
 
   Future<AuthSession> register({
     required String email,
@@ -64,7 +69,22 @@ class FakeAuthService implements AuthService {
   }
 
   @override
-  Future<AuthSession> signIn({
+  Future<SignInResult> signIn({
+    required String email,
+    required String password,
+  }) async {
+    final session = AuthSession(
+      email: email.trim().toLowerCase(),
+      signedInAt: DateTime.now(),
+    );
+    _session = session;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_emailKey, session.email);
+    return const SignInSuccess();
+  }
+
+  @override
+  Future<AuthSession> register({
     required String email,
     required String password,
   }) async {
@@ -76,14 +96,6 @@ class FakeAuthService implements AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_emailKey, session.email);
     return session;
-  }
-
-  @override
-  Future<AuthSession> register({
-    required String email,
-    required String password,
-  }) async {
-    return signIn(email: email, password: password);
   }
 
   @override
@@ -114,6 +126,13 @@ class FakeAuthService implements AuthService {
     required String email,
     required String password,
   }) async {
-    return signIn(email: email, password: password);
+    final session = AuthSession(
+      email: email.trim().toLowerCase(),
+      signedInAt: DateTime.now(),
+    );
+    _session = session;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_emailKey, session.email);
+    return session;
   }
 }
