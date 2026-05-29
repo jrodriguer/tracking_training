@@ -1,0 +1,31 @@
+{
+  // Enable the review selection feature
+  "github.copilot.chat.reviewSelection.enabled": true,
+
+  // Define what Copilot should focus on during reviews
+  "github.copilot.chat.reviewSelection.instructions": [
+    {
+      "text": "Check for security vulnerabilities including injection attacks, hardcoded secrets, and missing input validation.",
+    },
+    {
+      "text": "Flag any functions longer than 50 lines and suggest decomposition.",
+    },
+    {
+      "text": "Verify error handling covers all failure paths.",
+    },
+  ],
+
+  "sqltools.connections": [
+    {
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 8090,
+      "driver": "PostgreSQL",
+      "name": "tracking_training",
+      "database": "tracking_training",
+      "username": "postgres",
+      "password": "rBno_i2LlSmZl2M7mNYi3v3wA9QnQxRs"
+    }
+  ]
+}

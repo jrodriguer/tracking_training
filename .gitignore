@@ -44,4 +44,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-.vscode/settings.json
+.vscode/settings.json# Ignore generated build artifacts for Flutter iOS
+tracking_training_flutter/ios/build/
+tracking_training_flutter/ios/Pods/
